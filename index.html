@@ -1,1258 +1,1638 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>漫步陆家嘴 - 东方明珠 3D 城市探索</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
-  html, body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #142238;
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    color: #f8fafc;
-  }
-  #canvas-wrap { position: fixed; inset: 0; width: 100%; height: 100%; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>漫步陆家嘴 - 东方明珠城市探索</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
-  .hud-top {
-    position: fixed;
-    top: 16px;
-    left: 16px;
-    right: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    pointer-events: none;
-    z-index: 10;
-  }
-  .panel {
-    pointer-events: auto;
-    background: rgba(20, 32, 56, 0.72);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 14px;
-    box-shadow: 0 10px 28px rgba(8, 15, 30, 0.28);
-  }
-  .title-card { padding: 12px 16px; }
-  .title-card h1 {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .pearl-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #fff7d6, #ff8ac4 65%, #70a8ff);
-    box-shadow: 0 0 10px #ff9ed0;
-  }
-  .title-card p {
-    font-size: 12px;
-    color: rgba(244, 248, 255, 0.85);
-    margin-top: 4px;
-  }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #162238;
+            color: #ffffff;
+        }
 
-  .controls-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
-  }
-  button.btn {
-    pointer-events: auto;
-    background: rgba(255, 255, 255, 0.12);
-    color: #f8fafc;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    padding: 7px 12px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.18s ease;
-  }
-  button.btn:hover { background: rgba(255, 255, 255, 0.22); transform: translateY(-1px); }
-  button.btn.active {
-    background: linear-gradient(135deg, rgba(255, 138, 192, 0.42), rgba(118, 178, 255, 0.42));
-    border-color: rgba(255, 200, 226, 0.8);
-  }
+        #canvas-container {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
 
-  .minimap-card {
-    position: fixed;
-    left: 16px;
-    bottom: 16px;
-    width: 166px;
-    padding: 10px;
-    z-index: 10;
-  }
-  .minimap-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: rgba(244, 248, 255, 0.86);
-    margin-bottom: 6px;
-  }
-  #minimap {
-    width: 146px;
-    height: 146px;
-    border-radius: 10px;
-    display: block;
-    background: rgba(16, 28, 50, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-  }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
 
-  .bottom-right {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-    z-index: 10;
-    max-width: 360px;
-  }
-  .landmark-card {
-    padding: 14px 16px;
-    width: 100%;
-    transition: opacity 0.25s ease, transform 0.25s ease;
-  }
-  .landmark-badge {
-    display: inline-block;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: rgba(255, 158, 206, 0.28);
-    color: #ffe0ef;
-    border: 1px solid rgba(255, 178, 216, 0.55);
-    margin-bottom: 6px;
-  }
-  .landmark-card h2 { font-size: 15px; margin-bottom: 5px; }
-  .landmark-card p { font-size: 12px; line-height: 1.55; color: rgba(244, 248, 255, 0.88); }
+        /* 玻璃拟态 UI 卡片（更通透明亮） */
+        .glass-panel {
+            background: rgba(28, 42, 70, 0.72);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 8px 32px rgba(10, 18, 36, 0.28);
+        }
 
-  .help-card {
-    padding: 10px 14px;
-    font-size: 12px;
-    color: rgba(244, 248, 255, 0.86);
-    line-height: 1.6;
-  }
-  .help-card kbd {
-    background: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    border-radius: 5px;
-    padding: 1px 5px;
-    font-size: 11px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  }
+        .neon-border-pink {
+            border-color: rgba(244, 114, 182, 0.65);
+            box-shadow: 0 0 22px rgba(244, 114, 182, 0.28);
+        }
 
-  .toast {
-    position: fixed;
-    top: 82px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-10px);
-    padding: 9px 18px;
-    border-radius: 999px;
-    background: rgba(24, 40, 68, 0.92);
-    border: 1px solid rgba(255, 196, 226, 0.7);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.25s ease;
-    z-index: 20;
-    box-shadow: 0 8px 24px rgba(10, 18, 36, 0.35);
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .btn-glow {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-glow:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 18px rgba(244, 114, 182, 0.55);
+        }
+        .btn-glow:active {
+            transform: scale(0.96);
+        }
 
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(12, 20, 38, 0.68);
-    backdrop-filter: blur(6px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 30;
-    padding: 20px;
-  }
-  .modal-backdrop.open { display: flex; }
-  .modal-box {
-    max-width: 680px;
-    width: 100%;
-    padding: 16px;
-    border-radius: 16px;
-  }
-  .modal-box img {
-    width: 100%;
-    border-radius: 10px;
-    display: block;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  .modal-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-    gap: 10px;
-  }
-</style>
+        /* 虚拟摇杆区域 */
+        #joystick-zone {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 120px;
+            height: 120px;
+            z-index: 25;
+            touch-action: none;
+        }
+
+        #joystick-base {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.16);
+            border: 2px solid rgba(255, 255, 255, 0.34);
+            position: relative;
+            backdrop-filter: blur(4px);
+        }
+
+        #joystick-stick {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #f472b6, #22d3ee);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.28);
+            pointer-events: none;
+        }
+
+        /* 动画 */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-slow {
+            animation: pulse-ring 3s infinite ease-in-out;
+        }
+
+        /* 拍照闪光灯效果 */
+        #flash-overlay {
+            position: fixed;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+            transition: opacity 0.4s ease-out;
+        }
+    </style>
 </head>
 <body>
-<div id="canvas-wrap"></div>
 
-<div class="hud-top">
-  <div class="panel title-card">
-    <h1><span class="pearl-dot"></span>漫步陆家嘴 · 东方明珠 3D 城市探索</h1>
-    <p id="status-line">已打卡地标：<span id="visited-count">0</span> / 7 · 能量球：<span id="orb-count">0</span> / 8 · 探索值：<span id="score-val">0</span></p>
-  </div>
+    <!-- 3D 渲染画布容器 -->
+    <div id="canvas-container"></div>
 
-  <div class="panel controls-bar">
-    <button class="btn active" id="mode-night">璀璨夜景</button>
-    <button class="btn" id="mode-sunset">陆家嘴黄昏</button>
-    <button class="btn" id="mode-day">晴朗白昼</button>
-    <button class="btn" id="cam-toggle">视角：第三人称</button>
-    <button class="btn" id="tp-pearl">传送明珠广场</button>
-    <button class="btn" id="photo-btn">拍照打卡</button>
-  </div>
-</div>
+    <!-- 拍照闪光层 -->
+    <div id="flash-overlay"></div>
 
-<div class="toast" id="toast"></div>
+    <!-- 开始欢迎界面 -->
+    <div id="start-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-md">
+        <div class="glass-panel neon-border-pink rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center relative overflow-hidden">
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-pink-400/25 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/25 rounded-full blur-3xl pointer-events-none"></div>
 
-<div class="panel minimap-card">
-  <div class="minimap-header">
-    <span>陆家嘴雷达</span>
-    <span id="coord-text">X: 0, Z: 46</span>
-  </div>
-  <canvas id="minimap" width="146" height="146"></canvas>
-</div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-400/20 border border-pink-300/45 text-pink-200 text-xs font-semibold mb-4">
+                <span>🏙️ 3D 沉浸式城市漫步</span>
+            </div>
 
-<div class="bottom-right">
-  <div class="panel landmark-card" id="landmark-card">
-    <span class="landmark-badge" id="lm-badge">当前区域</span>
-    <h2 id="lm-title">东方明珠塔下广场</h2>
-    <p id="lm-desc">走近发光光柱可触发地标打卡，收集街区能量球还可获得额外探索值。东方明珠广播电视塔高 468 米，以“大珠小珠落玉盘”为设计意象，是上海最具辨识度的城市地标。</p>
-  </div>
-  <div class="panel help-card">
-    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键行走 · <kbd>Shift</kbd> 奔跑 · <kbd>Space</kbd> 跳跃 · 鼠标左键拖拽环顾
-  </div>
-</div>
+            <h1 class="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-pink-300 via-sky-200 to-cyan-200 bg-clip-text text-transparent mb-2">
+                漫步陆家嘴
+            </h1>
+            <p class="text-slate-100/90 text-sm sm:text-base mb-6">
+                自由穿梭于上海金融中心，近距离仰望东方明珠、环球金融中心与上海中心大厦，漫步黄浦江滨江大道。
+            </p>
 
-<div class="modal-backdrop" id="photo-modal">
-  <div class="panel modal-box">
-    <img id="photo-preview" alt="陆家嘴打卡明信片" />
-    <div class="modal-footer">
-      <span style="font-size:12px;opacity:0.85;">已生成陆家嘴城市探索明信片</span>
-      <div style="display:flex;gap:8px;">
-        <a id="photo-download" download="lujiazui-postcard.png" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;">下载明信片</a>
-        <button class="btn" id="photo-close">关闭</button>
-      </div>
+            <!-- 操作指南网格 -->
+            <div class="grid grid-cols-2 gap-3 text-left bg-slate-800/65 rounded-2xl p-4 mb-6 border border-slate-600/60 text-xs sm:text-sm">
+                <div class="flex items-center gap-2.5">
+                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-cyan-300 font-bold">WASD / 方向键</span>
+                    <span class="text-slate-100">行走移动</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-pink-300 font-bold">鼠标拖拽</span>
+                    <span class="text-slate-100">环顾四周视角</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-amber-300 font-bold">Shift</span>
+                    <span class="text-slate-100">加速奔跑</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-emerald-300 font-bold">Space 空格</span>
+                    <span class="text-slate-100">跳跃</span>
+                </div>
+            </div>
+
+            <button id="start-btn" class="w-full py-3.5 px-6 rounded-2xl font-bold text-white text-base sm:text-lg bg-gradient-to-r from-pink-500 via-indigo-500 to-cyan-500 hover:from-pink-400 hover:to-cyan-400 btn-glow shadow-lg cursor-pointer">
+                开始探索陆家嘴 🚀
+            </button>
+        </div>
     </div>
-  </div>
-</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.169.0/build/three.module.js"
-  }
-}
-</script>
-
-<script type="module">
-import * as THREE from 'three';
-
-const container = document.getElementById('canvas-wrap');
-const scene = new THREE.Scene();
-
-const camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.2, 900);
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.28;
-container.appendChild(renderer.domElement);
-
-// 天空穹顶着色器（明亮清透的蓝紫夜空渐变）
-const skyUniforms = {
-  topColor: { value: new THREE.Color(0x162b54) },
-  midColor: { value: new THREE.Color(0x2e5288) },
-  bottomColor: { value: new THREE.Color(0x5b4a78) },
-  sunDir: { value: new THREE.Vector3(-0.5, 0.35, -0.7).normalize() },
-  sunColor: { value: new THREE.Color(0xffb5d8) }
-};
-const skyMat = new THREE.ShaderMaterial({
-  side: THREE.BackSide,
-  depthWrite: false,
-  uniforms: skyUniforms,
-  vertexShader: `
-    varying vec3 vWorldPos;
-    void main() {
-      vec4 wp = modelMatrix * vec4(position, 1.0);
-      vWorldPos = wp.xyz;
-      gl_Position = projectionMatrix * viewMatrix * wp;
-    }
-  `,
-  fragmentShader: `
-    uniform vec3 topColor;
-    uniform vec3 midColor;
-    uniform vec3 bottomColor;
-    uniform vec3 sunDir;
-    uniform vec3 sunColor;
-    varying vec3 vWorldPos;
-    void main() {
-      vec3 dir = normalize(vWorldPos);
-      float h = clamp(dir.y, 0.0, 1.0);
-      vec3 col = mix(bottomColor, midColor, smoothstep(0.0, 0.28, h));
-      col = mix(col, topColor, smoothstep(0.28, 0.9, h));
-      float sunAmt = max(dot(dir, sunDir), 0.0);
-      col += sunColor * pow(sunAmt, 20.0) * 0.5;
-      gl_FragColor = vec4(col, 1.0);
-    }
-  `
-});
-const skyDome = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 24), skyMat);
-scene.add(skyDome);
-
-const fog = new THREE.FogExp2(0x283e63, 0.0017);
-scene.fog = fog;
-
-// 光源系统（增强环境漫反射与主方向光亮度）
-const hemiLight = new THREE.HemisphereLight(0xc4dcff, 0x565278, 1.45);
-scene.add(hemiLight);
-
-const dirLight = new THREE.DirectionalLight(0xffe6cc, 2.35);
-dirLight.position.set(-70, 95, -60);
-dirLight.castShadow = true;
-dirLight.shadow.mapSize.set(2048, 2048);
-dirLight.shadow.camera.near = 10;
-dirLight.shadow.camera.far = 280;
-const d = 110;
-dirLight.shadow.camera.left = -d;
-dirLight.shadow.camera.right = d;
-dirLight.shadow.camera.top = d;
-dirLight.shadow.camera.bottom = -d;
-scene.add(dirLight);
-
-const fillLight = new THREE.DirectionalLight(0x9ec5ff, 0.85);
-fillLight.position.set(65, 50, 60);
-scene.add(fillLight);
-
-// 地面、广场、道路与黄浦江
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x3b4761, roughness: 0.78, metalness: 0.1 });
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(520, 520), groundMat);
-ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = true;
-scene.add(ground);
-
-// 东方明珠中央广场
-const plazaMat = new THREE.MeshStandardMaterial({ color: 0x5b6b8c, roughness: 0.58, metalness: 0.18 });
-const plaza = new THREE.Mesh(new THREE.CircleGeometry(36, 48), plazaMat);
-plaza.rotation.x = -Math.PI / 2;
-plaza.position.set(0, 0.03, 0);
-plaza.receiveShadow = true;
-scene.add(plaza);
-
-// 广场同心装饰环
-const ringMat = new THREE.MeshBasicMaterial({ color: 0xff94c8 });
-const plazaRing = new THREE.Mesh(new THREE.RingGeometry(16.5, 17.2, 64), ringMat);
-plazaRing.rotation.x = -Math.PI / 2;
-plazaRing.position.set(0, 0.05, 0);
-scene.add(plazaRing);
-
-// 街道与人行横道
-const roadMat = new THREE.MeshStandardMaterial({ color: 0x2c364d, roughness: 0.82 });
-function addRoad(x, z, w, l) {
-  const r = new THREE.Mesh(new THREE.PlaneGeometry(w, l), roadMat);
-  r.rotation.x = -Math.PI / 2;
-  r.position.set(x, 0.02, z);
-  r.receiveShadow = true;
-  scene.add(r);
-}
-addRoad(0, 52, 16, 42);   // 世纪大道延伸段
-addRoad(0, -52, 16, 42);  // 滨江向北延伸段
-addRoad(-54, 0, 44, 15);  // 丰和路/陆家嘴西路方向
-addRoad(54, 0, 44, 15);   // 银城中路方向
-
-// 斑马线
-const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf4f8ff });
-for (let i = -5; i <= 5; i += 2) {
-  const s = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 3.6), stripeMat);
-  s.rotation.x = -Math.PI / 2;
-  s.position.set(i, 0.04, 34);
-  scene.add(s);
-}
-
-// 西侧黄浦江与对岸外滩剪影
-const riverMat = new THREE.MeshStandardMaterial({
-  color: 0x1c5d99,
-  roughness: 0.24,
-  metalness: 0.65
-});
-const river = new THREE.Mesh(new THREE.PlaneGeometry(130, 520), riverMat);
-river.rotation.x = -Math.PI / 2;
-river.position.set(-145, -0.25, 0);
-scene.add(river);
-
-// 黄浦江游船
-const cruiseShip = new THREE.Group();
-const hullMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(6.5, 2.2, 22),
-  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.32, metalness: 0.25 })
-);
-hullMesh.position.y = 1.1;
-const cabinMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(5.2, 1.8, 15),
-  new THREE.MeshStandardMaterial({ color: 0x67d4ff, emissive: 0x38bdf8, emissiveIntensity: 0.45 })
-);
-cabinMesh.position.y = 2.9;
-cruiseShip.add(hullMesh, cabinMesh);
-cruiseShip.position.set(-132, 0.1, 0);
-scene.add(cruiseShip);
-
-// 外滩历史建筑剪影（江对岸）
-const bundMat = new THREE.MeshStandardMaterial({ color: 0x556280, roughness: 0.68 });
-for (let z = -150; z <= 150; z += 26) {
-  const h = 18 + ((Math.abs(z) * 7) % 14);
-  const b = new THREE.Mesh(new THREE.BoxGeometry(22, h, 18), bundMat);
-  b.position.set(-225, h / 2, z);
-  scene.add(b);
-}
-
-// ==================== 东方明珠广播电视塔 ====================
-const pearlTower = new THREE.Group();
-scene.add(pearlTower);
-
-const towerSteelMat = new THREE.MeshStandardMaterial({ color: 0xeef3fb, metalness: 0.65, roughness: 0.28 });
-const darkAccentMat = new THREE.MeshStandardMaterial({ color: 0x5c6882, metalness: 0.55, roughness: 0.38 });
-const pearlSphereMat = new THREE.MeshStandardMaterial({
-  color: 0xffc6e3,
-  emissive: 0xff66b2,
-  emissiveIntensity: 0.72,
-  roughness: 0.22,
-  metalness: 0.3
-});
-const neonRingMat = new THREE.MeshBasicMaterial({ color: 0x80ecff });
-const lowerNeonMat = new THREE.MeshBasicMaterial({ color: 0xff94c8 });
-
-// 基座与三根斜撑巨柱
-const basePedestal = new THREE.Mesh(new THREE.CylinderGeometry(11.5, 14, 4.5, 24), darkAccentMat);
-basePedestal.position.y = 2.25;
-basePedestal.castShadow = true;
-pearlTower.add(basePedestal);
-
-const legRadius = 6.2;
-for (let i = 0; i < 3; i++) {
-  const angle = (i * Math.PI * 2) / 3 + Math.PI / 6;
-  const legGroup = new THREE.Group();
-  const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.55, 36, 16), towerSteelMat);
-  leg.position.y = 18;
-  leg.castShadow = true;
-  legGroup.add(leg);
-
-  legGroup.position.set(Math.cos(angle) * legRadius, 0, Math.sin(angle) * legRadius);
-  legGroup.rotation.z = -Math.cos(angle) * 0.145;
-  legGroup.rotation.x = Math.sin(angle) * 0.145;
-  pearlTower.add(legGroup);
-}
-
-// 中央主塔筒
-const coreShaft = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 3.2, 92, 24), towerSteelMat);
-coreShaft.position.y = 46;
-coreShaft.castShadow = true;
-pearlTower.add(coreShaft);
-
-// 下球体（约高 28m）
-const lowerSphere = new THREE.Mesh(new THREE.SphereGeometry(7.2, 32, 24), pearlSphereMat);
-lowerSphere.scale.set(1, 0.78, 1);
-lowerSphere.position.y = 28;
-lowerSphere.castShadow = true;
-pearlTower.add(lowerSphere);
-
-const lowerRing = new THREE.Mesh(new THREE.TorusGeometry(7.5, 0.22, 12, 48), lowerNeonMat);
-lowerRing.rotation.x = Math.PI / 2;
-lowerRing.position.y = 28;
-pearlTower.add(lowerRing);
-
-// 上球体（约高 66m）
-const upperSphere = new THREE.Mesh(new THREE.SphereGeometry(9.4, 36, 28), pearlSphereMat);
-upperSphere.scale.set(1, 0.82, 1);
-upperSphere.position.y = 66;
-upperSphere.castShadow = true;
-pearlTower.add(upperSphere);
-
-const upperRing1 = new THREE.Mesh(new THREE.TorusGeometry(9.8, 0.25, 12, 64), neonRingMat);
-upperRing1.rotation.x = Math.PI / 2;
-upperRing1.position.y = 66;
-pearlTower.add(upperRing1);
-
-const upperRing2 = new THREE.Mesh(new THREE.TorusGeometry(9.2, 0.18, 12, 64), lowerNeonMat);
-upperRing2.rotation.x = Math.PI / 2;
-upperRing2.position.y = 68.4;
-pearlTower.add(upperRing2);
-
-// 太空舱（约高 86m）
-const spaceCapsule = new THREE.Mesh(new THREE.SphereGeometry(3.8, 24, 18), towerSteelMat);
-spaceCapsule.scale.set(1, 0.9, 1);
-spaceCapsule.position.y = 86;
-pearlTower.add(spaceCapsule);
-
-// 顶部发射天线
-const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.85, 28, 16), towerSteelMat);
-spire.position.y = 104;
-pearlTower.add(spire);
-
-const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff6b8b });
-const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 12), beaconMat);
-beacon.position.y = 118.5;
-pearlTower.add(beacon);
-
-// ==================== 陆家嘴“三件套”与城市建筑群 ====================
-const glassMatA = new THREE.MeshStandardMaterial({ color: 0x8ec2ff, metalness: 0.72, roughness: 0.2 });
-const glassMatB = new THREE.MeshStandardMaterial({ color: 0xa4b8de, metalness: 0.68, roughness: 0.24 });
-const buildingMat = new THREE.MeshStandardMaterial({ color: 0x4b5d82, metalness: 0.42, roughness: 0.5 });
-const windowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffe299 });
-
-// 上海中心大厦（螺旋造型）
-const shanghaiTower = new THREE.Group();
-shanghaiTower.position.set(52, 0, -34);
-const twistSegments = 14;
-for (let i = 0; i < twistSegments; i++) {
-  const ratio = i / twistSegments;
-  const w = 13.5 * (1 - ratio * 0.42);
-  const segH = 8.2;
-  const seg = new THREE.Mesh(new THREE.BoxGeometry(w, segH - 0.15, w), glassMatA);
-  seg.position.y = i * segH + segH / 2;
-  seg.rotation.y = i * 0.14;
-  seg.castShadow = true;
-  shanghaiTower.add(seg);
-}
-scene.add(shanghaiTower);
-
-// 上海环球金融中心（顶部风洞/开瓶器造型）
-const swfc = new THREE.Group();
-swfc.position.set(66, 0, 14);
-const swfcBody = new THREE.Mesh(new THREE.BoxGeometry(12, 86, 12), glassMatB);
-swfcBody.position.y = 43;
-swfcBody.castShadow = true;
-swfc.add(swfcBody);
-
-const swfcLeft = new THREE.Mesh(new THREE.BoxGeometry(3.2, 14, 12.2), glassMatB);
-swfcLeft.position.set(-4.4, 93, 0);
-swfc.add(swfcLeft);
-
-const swfcRight = new THREE.Mesh(new THREE.BoxGeometry(3.2, 14, 12.2), glassMatB);
-swfcRight.position.set(4.4, 93, 0);
-swfc.add(swfcRight);
-
-const swfcTopBar = new THREE.Mesh(new THREE.BoxGeometry(12, 3, 12.2), glassMatB);
-swfcTopBar.position.set(0, 100.5, 0);
-swfc.add(swfcTopBar);
-scene.add(swfc);
-
-// 金茂大厦
-const jinmao = new THREE.Group();
-jinmao.position.set(34, 0, 26);
-for (let tier = 0; tier < 6; tier++) {
-  const r = 9.2 - tier * 1.1;
-  const h = 11.5;
-  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.88, r, h, 8), towerSteelMat);
-  cyl.position.y = tier * h + h / 2;
-  cyl.castShadow = true;
-  jinmao.add(cyl);
-}
-scene.add(jinmao);
-
-// 周围街区楼宇与景观树
-const obstacles = [
-  { x: 0, z: 0, r: 12.5 }
-];
-
-function addCityBlock(x, z, w, d, h) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
-  mesh.position.set(x, h / 2, z);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  scene.add(mesh);
-
-  for (let y = 5; y < h - 4; y += 7) {
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(w + 0.15, 0.55, d + 0.15), windowGlowMat);
-    strip.position.set(x, y, z);
-    scene.add(strip);
-  }
-  obstacles.push({ x, z, r: Math.max(w, d) * 0.55 });
-}
-
-const blockCoords = [
-  [-32, -32, 16, 16, 34],
-  [-32, 32, 16, 16, 28],
-  [32, -32, 16, 16, 38],
-  [36, 48, 18, 16, 30],
-  [-56, 34, 18, 18, 24],
-  [-56, -34, 18, 18, 26],
-  [84, -18, 18, 20, 44],
-  [84, 24, 18, 20, 36]
-];
-blockCoords.forEach(([x, z, w, d, h]) => addCityBlock(x, z, w, d, h));
-
-// 行道树
-const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7a5642, roughness: 0.85 });
-const foliageMat = new THREE.MeshStandardMaterial({ color: 0x439970, roughness: 0.75 });
-const treePositions = [
-  [-12, 22], [12, 22], [-12, -22], [12, -22],
-  [-22, 11], [-22, -11], [22, 11], [22, -11],
-  [-10, 42], [10, 42], [-10, -42], [10, -42]
-];
-treePositions.forEach(([tx, tz]) => {
-  const g = new THREE.Group();
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 2.4, 8), trunkMat);
-  trunk.position.y = 1.2;
-  trunk.castShadow = true;
-  const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(2.1, 1), foliageMat);
-  crown.position.y = 3.6;
-  crown.castShadow = true;
-  g.add(trunk, crown);
-  g.position.set(tx, 0, tz);
-  scene.add(g);
-});
-
-// ==================== 打卡地标与发光光柱（保留全部 7 个地标） ====================
-const landmarks = [
-  {
-    id: 'pearl',
-    name: '东方明珠广播电视塔',
-    badge: '地标 01 · 核心地标',
-    x: 0,
-    z: 18,
-    desc: '塔高 468 米，集观光、餐饮、娱乐、都市历史陈列于一体。夜晚球体与霓虹光环亮起，是陆家嘴天际线的灵魂。'
-  },
-  {
-    id: 'shanghai-tower',
-    name: '上海中心大厦',
-    badge: '地标 02 · 超高层建筑',
-    x: 34,
-    z: -20,
-    desc: '建筑高度 632 米，采用独特的“龙型”螺旋上升外观与双层幕墙设计，减少风荷载并提升自然采光。'
-  },
-  {
-    id: 'swfc',
-    name: '上海环球金融中心',
-    badge: '地标 03 · 陆家嘴三件套',
-    x: 48,
-    z: 14,
-    desc: '顶部拥有标志性梯形风洞结构，高区观光天阁可俯瞰黄浦江两岸与密集摩天楼群。'
-  },
-  {
-    id: 'jinmao',
-    name: '金茂大厦',
-    badge: '地标 04 · 经典塔楼',
-    x: 22,
-    z: 24,
-    desc: '融合中国传统宝塔层叠韵律与现代钢结构技术，是陆家嘴早期崛起的标志性摩天大楼之一。'
-  },
-  {
-    id: 'bund-view',
-    name: '滨江观景台',
-    badge: '地标 05 · 江景视角',
-    x: -68,
-    z: 0,
-    desc: '面向黄浦江与外滩万国建筑博览群，这里是拍摄东方明珠与陆家嘴全景的绝佳观景点。'
-  },
-  {
-    id: 'century-avenue',
-    name: '世纪大道起点',
-    badge: '地标 06 · 城市轴线',
-    x: 0,
-    z: 56,
-    desc: '连接东方明珠与世纪公园的宽阔城市轴线，两侧绿意与现代商务楼宇交相辉映。'
-  },
-  {
-    id: 'north-promenade',
-    name: '北滨江光影长廊',
-    badge: '地标 07 · 夜景漫步',
-    x: -16,
-    z: -48,
-    desc: '沿江向北延伸的漫步长廊，夜晚可近距离感受东方明珠光环与江面波光的交织。'
-  }
-];
-
-const visitedSet = new Set();
-let score = 0;
-const beaconMeshes = [];
-
-landmarks.forEach((lm) => {
-  const beamMat = new THREE.MeshBasicMaterial({
-    color: 0x8ffaff,
-    transparent: true,
-    opacity: 0.28,
-    side: THREE.DoubleSide,
-    depthWrite: false
-  });
-  const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 11, 20, 1, true), beamMat);
-  beam.position.set(lm.x, 5.5, lm.z);
-  scene.add(beam);
-
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(1.8, 2.25, 32),
-    new THREE.MeshBasicMaterial({ color: 0xffa8d4, side: THREE.DoubleSide })
-  );
-  ring.rotation.x = -Math.PI / 2;
-  ring.position.set(lm.x, 0.06, lm.z);
-  scene.add(ring);
-
-  beaconMeshes.push({ lm, beam, ring });
-});
-
-// ==================== 8 颗街区能量球收集 ====================
-const orbCoords = [
-  [-14, 14], [14, 14], [-14, -14], [14, -14],
-  [-44, 6], [42, 4], [8, 40], [-8, -36]
-];
-const orbMat = new THREE.MeshStandardMaterial({
-  color: 0xffe082,
-  emissive: 0xffb32c,
-  emissiveIntensity: 0.85,
-  roughness: 0.2,
-  metalness: 0.35
-});
-const energyOrbs = orbCoords.map(([ox, oz], idx) => {
-  const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.75, 1), orbMat);
-  mesh.position.set(ox, 1.4, oz);
-  scene.add(mesh);
-  return { id: idx, x: ox, z: oz, mesh, collected: false };
-});
-let collectedOrbs = 0;
-
-// ==================== 写实比例关节玩家角色模型 ====================
-const player = new THREE.Group();
-player.position.set(0, 0, 46);
-scene.add(player);
-
-const skinMat = new THREE.MeshStandardMaterial({ color: 0xf5caa6, roughness: 0.52, metalness: 0.02 });
-const hairMat = new THREE.MeshStandardMaterial({ color: 0x2e364a, roughness: 0.68, metalness: 0.05 });
-const jacketMat = new THREE.MeshStandardMaterial({ color: 0x4b87c9, roughness: 0.48, metalness: 0.08 });
-const jacketTrimMat = new THREE.MeshStandardMaterial({ color: 0x2d588a, roughness: 0.55, metalness: 0.1 });
-const pantsMat = new THREE.MeshStandardMaterial({ color: 0x394763, roughness: 0.65, metalness: 0.05 });
-const shoeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4, metalness: 0.12 });
-const shoeSoleMat = new THREE.MeshStandardMaterial({ color: 0x2a3244, roughness: 0.8, metalness: 0.05 });
-
-const characterRig = new THREE.Group();
-player.add(characterRig);
-
-// 骨盆/腰部
-const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 0.16, 16), jacketTrimMat);
-pelvis.position.y = 0.96;
-pelvis.castShadow = true;
-characterRig.add(pelvis);
-
-// 躯干组（支持呼吸起伏与前倾）
-const upperBodyGroup = new THREE.Group();
-upperBodyGroup.position.set(0, 1.02, 0);
-characterRig.add(upperBodyGroup);
-
-// 胸腔与外套（略收腰的立体造型）
-const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.24, 0.56, 18), jacketMat);
-chest.scale.set(1.08, 1.0, 0.72);
-chest.position.y = 0.28;
-chest.castShadow = true;
-upperBodyGroup.add(chest);
-
-// 领口与衣襟细节
-const collar = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.032, 10, 20), jacketTrimMat);
-collar.rotation.x = Math.PI / 2;
-collar.position.set(0, 0.57, 0.02);
-upperBodyGroup.add(collar);
-
-// 颈部与头部组
-const headGroup = new THREE.Group();
-headGroup.position.set(0, 0.6, 0.02);
-upperBodyGroup.add(headGroup);
-
-const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.098, 0.12, 14), skinMat);
-neck.position.y = 0.04;
-neck.castShadow = true;
-headGroup.add(neck);
-
-// 头部（略拉长接近真实头身比，朝向 -Z）
-const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.185, 24, 20), skinMat);
-headMesh.scale.set(0.92, 1.08, 1.0);
-headMesh.position.set(0, 0.21, -0.02);
-headMesh.castShadow = true;
-headGroup.add(headMesh);
-
-// 头发（发顶 + 后脑勺 + 刘海）
-const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.195, 24, 18, 0, Math.PI * 2, 0, Math.PI * 0.62), hairMat);
-hairCap.scale.set(0.95, 1.08, 1.03);
-hairCap.position.set(0, 0.225, -0.035);
-hairCap.castShadow = true;
-headGroup.add(hairCap);
-
-const fringe = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.07, 0.07), hairMat);
-fringe.position.set(0, 0.31, -0.175);
-fringe.rotation.x = -0.25;
-headGroup.add(fringe);
-
-// 双眼与鼻梁微细节（朝 -Z）
-const eyeMat = new THREE.MeshBasicMaterial({ color: 0x181c24 });
-const leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 10), eyeMat);
-leftEye.position.set(-0.062, 0.215, -0.195);
-const rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 10), eyeMat);
-rightEye.position.set(0.062, 0.215, -0.195);
-const nose = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.055, 0.045), skinMat);
-nose.position.set(0, 0.195, -0.205);
-headGroup.add(leftEye, rightEye, nose);
-
-// 辅助构建手臂与腿部关节
-function createArm(sideSign) {
-  const shoulderPivot = new THREE.Group();
-  shoulderPivot.position.set(sideSign * 0.34, 0.5, 0);
-
-  const shoulderCap = new THREE.Mesh(new THREE.SphereGeometry(0.095, 14, 14), jacketMat);
-  shoulderCap.castShadow = true;
-  shoulderPivot.add(shoulderCap);
-
-  const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.064, 0.31, 14), jacketMat);
-  upperArm.position.y = -0.16;
-  upperArm.castShadow = true;
-  shoulderPivot.add(upperArm);
-
-  const elbowPivot = new THREE.Group();
-  elbowPivot.position.set(0, -0.32, 0);
-  shoulderPivot.add(elbowPivot);
-
-  const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.05, 0.29, 14), skinMat);
-  forearm.position.y = -0.15;
-  forearm.castShadow = true;
-  elbowPivot.add(forearm);
-
-  const hand = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.11, 0.065), skinMat);
-  hand.position.y = -0.33;
-  hand.castShadow = true;
-  elbowPivot.add(hand);
-
-  return { shoulderPivot, elbowPivot };
-}
-
-function createLeg(sideSign) {
-  const hipPivot = new THREE.Group();
-  hipPivot.position.set(sideSign * 0.125, 0.92, 0);
-
-  const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.092, 0.44, 16), pantsMat);
-  thigh.position.y = -0.22;
-  thigh.castShadow = true;
-  hipPivot.add(thigh);
-
-  const kneePivot = new THREE.Group();
-  kneePivot.position.set(0, -0.44, 0);
-  hipPivot.add(kneePivot);
-
-  const kneeCap = new THREE.Mesh(new THREE.SphereGeometry(0.088, 12, 12), pantsMat);
-  kneePivot.add(kneeCap);
-
-  const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.088, 0.066, 0.41, 16), pantsMat);
-  calf.position.y = -0.21;
-  calf.castShadow = true;
-  kneePivot.add(calf);
-
-  const shoeUpper = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.085, 0.26), shoeMat);
-  shoeUpper.position.set(0, -0.43, -0.045);
-  shoeUpper.castShadow = true;
-  kneePivot.add(shoeUpper);
-
-  const shoeSole = new THREE.Mesh(new THREE.BoxGeometry(0.145, 0.032, 0.275), shoeSoleMat);
-  shoeSole.position.set(0, -0.475, -0.045);
-  kneePivot.add(shoeSole);
-
-  return { hipPivot, kneePivot };
-}
-
-const leftArm = createArm(-1);
-const rightArm = createArm(1);
-upperBodyGroup.add(leftArm.shoulderPivot, rightArm.shoulderPivot);
-
-const leftLegRig = createLeg(-1);
-const rightLegRig = createLeg(1);
-characterRig.add(leftLegRig.hipPivot, rightLegRig.hipPivot);
-
-// ==================== 控制与交互状态 ====================
-const keys = {};
-window.addEventListener('keydown', (e) => { keys[e.code] = true; });
-window.addEventListener('keyup', (e) => { keys[e.code] = false; });
-
-let yaw = 0;
-let pitch = 0.24;
-let isDragging = false;
-let lastPointerX = 0;
-let lastPointerY = 0;
-let firstPerson = false;
-
-renderer.domElement.addEventListener('pointerdown', (e) => {
-  isDragging = true;
-  lastPointerX = e.clientX;
-  lastPointerY = e.clientY;
-});
-window.addEventListener('pointermove', (e) => {
-  if (!isDragging) return;
-  const dx = e.clientX - lastPointerX;
-  const dy = e.clientY - lastPointerY;
-  lastPointerX = e.clientX;
-  lastPointerY = e.clientY;
-  yaw -= dx * 0.0055;
-  pitch = THREE.MathUtils.clamp(pitch + dy * 0.0045, -0.35, 0.95);
-});
-window.addEventListener('pointerup', () => { isDragging = false; });
-
-let velY = 0;
-let isGrounded = true;
-let walkCycle = 0;
-
-// 氛围切换（整体调亮）
-const modes = {
-  night: {
-    top: 0x162b54, mid: 0x2e5288, bottom: 0x5b4a78,
-    sunColor: 0xffb5d8, fog: 0x283e63, hemi: 1.45, dir: 2.35,
-    sphereEmissive: 0.72
-  },
-  sunset: {
-    top: 0x2b417a, mid: 0xc2698c, bottom: 0xffb585,
-    sunColor: 0xffca8a, fog: 0x6e546b, hemi: 1.55, dir: 2.65,
-    sphereEmissive: 0.45
-  },
-  day: {
-    top: 0x3b8ff5, mid: 0x8fd0ff, bottom: 0xe8f6ff,
-    sunColor: 0xfff8e0, fog: 0xb6defa, hemi: 1.85, dir: 2.85,
-    sphereEmissive: 0.18
-  }
-};
-
-function setAtmosphere(modeKey) {
-  const m = modes[modeKey];
-  skyUniforms.topColor.value.setHex(m.top);
-  skyUniforms.midColor.value.setHex(m.mid);
-  skyUniforms.bottomColor.value.setHex(m.bottom);
-  skyUniforms.sunColor.value.setHex(m.sunColor);
-  fog.color.setHex(m.fog);
-  hemiLight.intensity = m.hemi;
-  dirLight.intensity = m.dir;
-  pearlSphereMat.emissiveIntensity = m.sphereEmissive;
-
-  ['night', 'sunset', 'day'].forEach((k) => {
-    document.getElementById(`mode-${k}`).classList.toggle('active', k === modeKey);
-  });
-}
-
-document.getElementById('mode-night').addEventListener('click', () => setAtmosphere('night'));
-document.getElementById('mode-sunset').addEventListener('click', () => setAtmosphere('sunset'));
-document.getElementById('mode-day').addEventListener('click', () => setAtmosphere('day'));
-
-const camToggleBtn = document.getElementById('cam-toggle');
-camToggleBtn.addEventListener('click', () => {
-  firstPerson = !firstPerson;
-  player.visible = !firstPerson;
-  camToggleBtn.textContent = firstPerson ? '视角：第一人称' : '视角：第三人称';
-  camToggleBtn.classList.toggle('active', firstPerson);
-});
-
-const toastEl = document.getElementById('toast');
-let toastTimer = null;
-function showToast(msg) {
-  toastEl.textContent = msg;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
-}
-
-document.getElementById('tp-pearl').addEventListener('click', () => {
-  player.position.set(0, 0, 22);
-  velY = 0;
-  yaw = 0;
-  showToast('已传送至东方明珠广场');
-});
-
-// 拍照打卡生成明信片
-const photoModal = document.getElementById('photo-modal');
-const photoPreview = document.getElementById('photo-preview');
-const photoDownload = document.getElementById('photo-download');
-
-document.getElementById('photo-btn').addEventListener('click', () => {
-  renderer.render(scene, camera);
-  const srcCanvas = renderer.domElement;
-  const outCanvas = document.createElement('canvas');
-  outCanvas.width = srcCanvas.width;
-  outCanvas.height = srcCanvas.height;
-  const ctx = outCanvas.getContext('2d');
-  ctx.drawImage(srcCanvas, 0, 0);
-
-  const barH = Math.max(54, Math.round(outCanvas.height * 0.08));
-  ctx.fillStyle = 'rgba(18, 30, 52, 0.72)';
-  ctx.fillRect(0, outCanvas.height - barH, outCanvas.width, barH);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `600 ${Math.max(16, Math.round(barH * 0.36))}px sans-serif`;
-  ctx.fillText(`上海 · 陆家嘴东方明珠探索打卡（地标 ${visitedSet.size}/7 · 能量球 ${collectedOrbs}/8）`, 24, outCanvas.height - barH * 0.36);
-
-  const dataUrl = outCanvas.toDataURL('image/png');
-  photoPreview.src = dataUrl;
-  photoDownload.href = dataUrl;
-  photoModal.classList.add('open');
-});
-
-document.getElementById('photo-close').addEventListener('click', () => {
-  photoModal.classList.remove('open');
-});
-
-// ==================== 小地图绘制 ====================
-const minimapCanvas = document.getElementById('minimap');
-const mCtx = minimapCanvas.getContext('2d');
-
-function drawMinimap() {
-  const w = minimapCanvas.width;
-  const h = minimapCanvas.height;
-  const scale = 0.62;
-  const cx = w / 2;
-  const cz = h / 2;
-
-  mCtx.clearRect(0, 0, w, h);
-
-  mCtx.fillStyle = 'rgba(42, 125, 208, 0.52)';
-  mCtx.fillRect(0, 0, cx + (-80) * scale, h);
-
-  mCtx.fillStyle = '#ff94c8';
-  mCtx.beginPath();
-  mCtx.arc(cx, cz, 5, 0, Math.PI * 2);
-  mCtx.fill();
-
-  landmarks.forEach((lm) => {
-    const px = cx + lm.x * scale;
-    const pz = cz + lm.z * scale;
-    mCtx.fillStyle = visitedSet.has(lm.id) ? '#6ef7b7' : '#8ffaff';
-    mCtx.beginPath();
-    mCtx.arc(px, pz, 3.2, 0, Math.PI * 2);
-    mCtx.fill();
-  });
-
-  energyOrbs.forEach((orb) => {
-    if (orb.collected) return;
-    const ox = cx + orb.x * scale;
-    const oz = cz + orb.z * scale;
-    mCtx.fillStyle = '#ffe082';
-    mCtx.beginPath();
-    mCtx.arc(ox, oz, 2.2, 0, Math.PI * 2);
-    mCtx.fill();
-  });
-
-  const ux = cx + player.position.x * scale;
-  const uz = cz + player.position.z * scale;
-  mCtx.save();
-  mCtx.translate(ux, uz);
-  mCtx.rotate(-yaw);
-  mCtx.fillStyle = '#ffe082';
-  mCtx.beginPath();
-  mCtx.moveTo(0, -6);
-  mCtx.lineTo(4.5, 5);
-  mCtx.lineTo(0, 2.5);
-  mCtx.lineTo(-4.5, 5);
-  mCtx.closePath();
-  mCtx.fill();
-  mCtx.restore();
-}
-
-// ==================== 主循环 ====================
-const clock = new THREE.Clock();
-const lmBadgeEl = document.getElementById('lm-badge');
-const lmTitleEl = document.getElementById('lm-title');
-const lmDescEl = document.getElementById('lm-desc');
-const visitedCountEl = document.getElementById('visited-count');
-const orbCountEl = document.getElementById('orb-count');
-const scoreValEl = document.getElementById('score-val');
-const coordTextEl = document.getElementById('coord-text');
-
-function animate() {
-  requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
-  const elapsed = clock.getElapsedTime();
-
-  cruiseShip.position.z = Math.sin(elapsed * 0.25) * 110;
-
-  let moveForward = 0;
-  let moveRight = 0;
-  if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
-  if (keys['KeyS'] || keys['ArrowDown']) moveForward -= 1;
-  if (keys['KeyD'] || keys['ArrowRight']) moveRight += 1;
-  if (keys['KeyA'] || keys['ArrowLeft']) moveRight -= 1;
-
-  const isRunning = keys['ShiftLeft'] || keys['ShiftRight'];
-  const speed = isRunning ? 19 : 10.5;
-  const isMoving = moveForward !== 0 || moveRight !== 0;
-
-  if (isMoving) {
-    const forwardVec = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-    const rightVec = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
-    const dirVec = new THREE.Vector3()
-      .addScaledVector(forwardVec, moveForward)
-      .addScaledVector(rightVec, moveRight)
-      .normalize();
-
-    const nextX = player.position.x + dirVec.x * speed * dt;
-    const nextZ = player.position.z + dirVec.z * speed * dt;
-
-    const clampedX = THREE.MathUtils.clamp(nextX, -76, 98);
-    const clampedZ = THREE.MathUtils.clamp(nextZ, -95, 95);
-
-    let blocked = false;
-    for (const obs of obstacles) {
-      const dx = clampedX - obs.x;
-      const dz = clampedZ - obs.z;
-      if (dx * dx + dz * dz < (obs.r + 0.65) * (obs.r + 0.65)) {
-        blocked = true;
-        break;
-      }
-    }
-    if (!blocked) {
-      player.position.x = clampedX;
-      player.position.z = clampedZ;
-    }
-
-    const targetRotY = Math.atan2(-dirVec.x, -dirVec.z);
-    player.rotation.y = targetRotY;
-
-    const strideFreq = isRunning ? 14.5 : 10.5;
-    walkCycle += dt * strideFreq;
-    const swingAmp = isRunning ? 0.78 : 0.48;
-    const s = Math.sin(walkCycle);
-    const c = Math.cos(walkCycle);
-
-    leftLegRig.hipPivot.rotation.x = s * swingAmp;
-    rightLegRig.hipPivot.rotation.x = -s * swingAmp;
-    leftLegRig.kneePivot.rotation.x = Math.max(0, -c) * swingAmp * 0.85;
-    rightLegRig.kneePivot.rotation.x = Math.max(0, c) * swingAmp * 0.85;
-
-    leftArm.shoulderPivot.rotation.x = -s * swingAmp * 0.72;
-    rightArm.shoulderPivot.rotation.x = s * swingAmp * 0.72;
-    leftArm.elbowPivot.rotation.x = -0.25 - Math.max(0, s) * 0.45;
-    rightArm.elbowPivot.rotation.x = -0.25 - Math.max(0, -s) * 0.45;
-
-    characterRig.position.y = Math.abs(c) * (isRunning ? 0.08 : 0.045);
-    upperBodyGroup.rotation.x = isRunning ? -0.14 : -0.05;
-    upperBodyGroup.rotation.y = -s * 0.08;
-    headGroup.rotation.x = isRunning ? 0.1 : 0.03;
-  } else {
-    const breath = Math.sin(elapsed * 2.4);
-    leftLegRig.hipPivot.rotation.x *= 0.82;
-    rightLegRig.hipPivot.rotation.x *= 0.82;
-    leftLegRig.kneePivot.rotation.x *= 0.82;
-    rightLegRig.kneePivot.rotation.x *= 0.82;
-
-    leftArm.shoulderPivot.rotation.x = THREE.MathUtils.lerp(leftArm.shoulderPivot.rotation.x, 0.04 * breath, 0.18);
-    rightArm.shoulderPivot.rotation.x = THREE.MathUtils.lerp(rightArm.shoulderPivot.rotation.x, -0.04 * breath, 0.18);
-    leftArm.elbowPivot.rotation.x = THREE.MathUtils.lerp(leftArm.elbowPivot.rotation.x, -0.18, 0.18);
-    rightArm.elbowPivot.rotation.x = THREE.MathUtils.lerp(rightArm.elbowPivot.rotation.x, -0.18, 0.18);
-
-    characterRig.position.y = THREE.MathUtils.lerp(characterRig.position.y, breath * 0.012, 0.18);
-    upperBodyGroup.rotation.x = THREE.MathUtils.lerp(upperBodyGroup.rotation.x, 0, 0.18);
-    upperBodyGroup.rotation.y = THREE.MathUtils.lerp(upperBodyGroup.rotation.y, 0, 0.18);
-    headGroup.rotation.x = THREE.MathUtils.lerp(headGroup.rotation.x, -breath * 0.015, 0.18);
-  }
-
-  if (keys['Space'] && isGrounded) {
-    velY = 8.2;
-    isGrounded = false;
-  }
-  velY -= 21 * dt;
-  player.position.y += velY * dt;
-  if (player.position.y <= 0) {
-    player.position.y = 0;
-    velY = 0;
-    isGrounded = true;
-  }
-
-  if (firstPerson) {
-    const eyePos = new THREE.Vector3(player.position.x, player.position.y + 1.82, player.position.z);
-    camera.position.copy(eyePos);
-    const lookTarget = new THREE.Vector3(
-      eyePos.x - Math.sin(yaw) * Math.cos(pitch) * 12,
-      eyePos.y + Math.sin(pitch) * 12,
-      eyePos.z - Math.cos(yaw) * Math.cos(pitch) * 12
-    );
-    camera.lookAt(lookTarget);
-  } else {
-    const dist = 9.5;
-    const horizDist = Math.cos(pitch) * dist;
-    const camX = player.position.x + Math.sin(yaw) * horizDist;
-    const camZ = player.position.z + Math.cos(yaw) * horizDist;
-    const camY = Math.max(1.2, player.position.y + 1.8 + Math.sin(pitch) * dist);
-    camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 1 - Math.exp(-12 * dt));
-    camera.lookAt(player.position.x, player.position.y + 1.55, player.position.z);
-  }
-
-  upperRing1.rotation.z = elapsed * 0.35;
-  lowerRing.rotation.z = -elapsed * 0.25;
-
-  for (const orb of energyOrbs) {
-    if (orb.collected) continue;
-    orb.mesh.rotation.y = elapsed * 1.8;
-    orb.mesh.position.y = 1.4 + Math.sin(elapsed * 2.5 + orb.id) * 0.25;
-    const dOrb = Math.hypot(player.position.x - orb.x, player.position.z - orb.z);
-    if (dOrb < 2.2) {
-      orb.collected = true;
-      orb.mesh.visible = false;
-      collectedOrbs += 1;
-      score += 50;
-      orbCountEl.textContent = collectedOrbs;
-      scoreValEl.textContent = score;
-      showToast(`收集能量球 (${collectedOrbs}/8) +50 探索值`);
-    }
-  }
-
-  let nearest = null;
-  let nearestDist = Infinity;
-
-  for (const item of beaconMeshes) {
-    item.ring.rotation.z = elapsed * 0.8;
-    const dx = player.position.x - item.lm.x;
-    const dz = player.position.z - item.lm.z;
-    const dist = Math.hypot(dx, dz);
-
-    if (dist < nearestDist) {
-      nearestDist = dist;
-      nearest = item.lm;
-    }
-
-    if (dist < 4.2 && !visitedSet.has(item.lm.id)) {
-      visitedSet.add(item.lm.id);
-      score += 100;
-      visitedCountEl.textContent = visitedSet.size;
-      scoreValEl.textContent = score;
-      item.beam.material.color.setHex(0x6ef7b7);
-      showToast(`打卡成功：${item.lm.name} (+100 探索值)`);
-    }
-  }
-
-  if (nearest && nearestDist < 26) {
-    lmBadgeEl.textContent = visitedSet.has(nearest.id) ? `${nearest.badge} · 已打卡` : nearest.badge;
-    lmTitleEl.textContent = nearest.name;
-    lmDescEl.textContent = nearest.desc;
-  }
-
-  coordTextEl.textContent = `X: ${Math.round(player.position.x)}, Z: ${Math.round(player.position.z)}`;
-  drawMinimap();
-  renderer.render(scene, camera);
-}
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-animate();
-</script>
+
+    <!-- 主游戏 HUD 界面 -->
+    <div id="game-hud" class="fixed inset-0 z-20 pointer-events-none hidden">
+        
+        <!-- 顶部栏：状态信息 + 模式控制 -->
+        <div class="flex flex-wrap items-start justify-between gap-3 p-3 sm:p-5">
+            <!-- 探索进度与坐标 -->
+            <div class="glass-panel rounded-2xl px-4 py-2.5 pointer-events-auto flex items-center gap-4">
+                <div>
+                    <div class="text-[11px] text-slate-300 uppercase tracking-wider">探索打卡点</div>
+                    <div class="text-base sm:text-lg font-bold text-pink-300 flex items-center gap-1.5">
+                        <span>📍</span>
+                        <span id="landmark-counter">0 / 5</span>
+                    </div>
+                </div>
+                <div class="h-7 w-px bg-slate-500/60"></div>
+                <div>
+                    <div class="text-[11px] text-slate-300 uppercase tracking-wider">探索积分</div>
+                    <div class="text-base sm:text-lg font-bold text-cyan-300" id="score-display">0</div>
+                </div>
+            </div>
+
+            <!-- 右上角工具栏：时间切换、视角切换、拍照模式 -->
+            <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
+                <!-- 昼夜/霓虹切换 -->
+                <div class="glass-panel rounded-2xl p-1 flex items-center gap-1">
+                    <button data-time="night" class="time-btn active px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-500 text-white transition cursor-pointer">
+                        🌃 璀璨夜景
+                    </button>
+                    <button data-time="sunset" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white transition cursor-pointer">
+                        🌇 陆家嘴黄昏
+                    </button>
+                    <button data-time="day" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white transition cursor-pointer">
+                        ☀️ 晴朗白昼
+                    </button>
+                </div>
+
+                <!-- 视角切换 -->
+                <button id="toggle-camera-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-slate-100 hover:text-white hover:border-cyan-300/60 transition cursor-pointer flex items-center gap-1.5">
+                    <span>👁️</span>
+                    <span id="camera-mode-text">第三人称</span>
+                </button>
+
+                <!-- 拍照模式 -->
+                <button id="photo-mode-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-amber-200 hover:border-amber-300/60 transition cursor-pointer flex items-center gap-1.5">
+                    <span>📷</span>
+                    <span>拍照打卡</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 右侧小地图雷达 -->
+        <div class="fixed top-20 right-3 sm:right-5 pointer-events-auto">
+            <div class="glass-panel rounded-2xl p-2 flex flex-col items-center">
+                <canvas id="minimap-canvas" width="136" height="136" class="rounded-xl bg-slate-900/90 border border-slate-600/70"></canvas>
+                <div class="text-[10px] text-slate-300 mt-1 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-pink-400"></span> 东方明珠
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-300"></span> 打卡点
+                </div>
+            </div>
+        </div>
+
+        <!-- 景点解锁弹窗卡片 -->
+        <div id="landmark-card" class="fixed bottom-28 sm:bottom-10 left-1/2 -translate-x-1/2 w-[92%] max-w-md glass-panel neon-border-pink rounded-3xl p-5 pointer-events-auto transition-all duration-300 opacity-0 translate-y-6 pointer-events-none">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <span id="landmark-badge" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-400/20 text-pink-200 border border-pink-300/40 mb-1.5">
+                        ✨ 发现地标 (+200 积分)
+                    </span>
+                    <h3 id="landmark-title" class="text-xl font-black text-white">东方明珠广播电视塔</h3>
+                </div>
+                <button id="close-landmark-btn" class="w-8 h-8 rounded-full bg-slate-700/80 hover:bg-slate-600 text-slate-200 flex items-center justify-center text-sm cursor-pointer">
+                    ✕
+                </button>
+            </div>
+            <p id="landmark-desc" class="text-xs sm:text-sm text-slate-200 mt-2 leading-relaxed">
+                高468米，由11个大小不一的球体串联而成，是上海最具标志性的文化景观之一。
+            </p>
+        </div>
+
+        <!-- 底部操作提示与快捷传送 -->
+        <div class="fixed bottom-4 right-4 hidden sm:flex items-center gap-2 pointer-events-auto">
+            <button id="teleport-pearl-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-200 hover:text-pink-200 transition cursor-pointer">
+                🗼 回到明珠广场
+            </button>
+            <button id="teleport-bund-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-200 hover:text-cyan-200 transition cursor-pointer">
+                🌊 漫步滨江大道
+            </button>
+        </div>
+
+        <!-- 移动端/触屏虚拟摇杆与跳跃按钮 -->
+        <div id="joystick-zone" class="sm:hidden">
+            <div id="joystick-base">
+                <div id="joystick-stick"></div>
+            </div>
+        </div>
+        <div class="fixed bottom-7 right-6 sm:hidden flex flex-col gap-3 z-25 pointer-events-auto">
+            <button id="mobile-sprint-btn" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center text-sm font-bold text-amber-300 active:scale-90">
+                ⚡
+            </button>
+            <button id="mobile-jump-btn" class="w-14 h-14 rounded-full glass-panel neon-border-pink flex items-center justify-center text-sm font-bold text-white active:scale-90">
+                跳跃
+            </button>
+        </div>
+    </div>
+
+    <!-- 拍照模式专属悬浮条 -->
+    <div id="photo-ui" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden flex items-center gap-3 glass-panel rounded-full px-5 py-3">
+        <span class="text-xs text-slate-200 hidden sm:inline">拖拽画面调整构图</span>
+        <button id="shutter-btn" class="px-5 py-2 rounded-full bg-gradient-to-r from-pink-500 to-cyan-500 text-white font-bold text-sm shadow-lg hover:brightness-110 cursor-pointer">
+            📸 拍摄留念
+        </button>
+        <button id="exit-photo-btn" class="px-4 py-2 rounded-full bg-slate-700/90 text-slate-200 hover:text-white text-xs font-bold cursor-pointer">
+            退出拍照
+        </button>
+    </div>
+
+    <!-- 照片预览弹窗 -->
+    <div id="photo-preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+        <div class="glass-panel rounded-3xl max-w-lg w-full p-5 text-center">
+            <h3 class="text-lg font-bold text-white mb-3">📸 陆家嘴城市明信片</h3>
+            <div class="rounded-2xl overflow-hidden border border-slate-600 mb-4 bg-slate-900">
+                <img id="captured-image" src="" alt="Captured City View" class="w-full h-auto block">
+            </div>
+            <div class="flex items-center justify-center gap-3">
+                <a id="download-photo-link" download="shanghai_lujiazui.png" class="px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-sm cursor-pointer">
+                    ⬇️ 保存照片
+                </a>
+                <button id="close-photo-preview-btn" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-sm cursor-pointer">
+                    继续漫步
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 漫步陆家嘴 - 3D 城市探索游戏核心逻辑
+         * 包含：Three.js 场景搭建、东方明珠程序化建模、陆家嘴天际线、黄浦江游船、
+         * 角色骨骼动画、第一/第三人称相机控制、碰撞检测、地标打卡与小地图雷达。
+         */
+
+        // ==================== 全局状态与配置 ====================
+        const state = {
+            started: false,
+            timeMode: 'night', // 'night' | 'sunset' | 'day'
+            cameraMode: 'third', // 'third' | 'first'
+            photoMode: false,
+            score: 0,
+            unlockedLandmarks: new Set(),
+            activeLandmarkId: null,
+            // 玩家物理与位置
+            player: {
+                pos: new THREE.Vector3(0, 0, 58),
+                vel: new THREE.Vector3(0, 0, 0),
+                yaw: Math.PI, // 初始朝向东方明珠 (-Z 方向)
+                onGround: true,
+                walkCycle: 0,
+                isMoving: false,
+                isSprinting: false
+            },
+            // 相机控制
+            camera: {
+                yaw: 0,
+                pitch: 0.22,
+                distance: 11,
+                isDragging: false,
+                lastX: 0,
+                lastY: 0
+            },
+            // 输入状态
+            keys: {
+                w: false, a: false, s: false, d: false,
+                ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false,
+                Shift: false, Space: false
+            },
+            joystick: { active: false, dx: 0, dy: 0 }
+        };
+
+        // 场景核心变量
+        let scene, camera, renderer, clock;
+        let ambientLight, dirLight, hemiLight;
+        let pearlTowerGroup, pearlLights = [], pearlRings = [];
+        let playerGroup, leftLeg, rightLeg, leftArm, rightArm, headGroup;
+        let boats = [], streetLampBulbs = [], buildingWindowMats = [];
+        let colliders = []; // 建筑物AABB碰撞箱
+        let checkpointMeshes = [];
+
+        // 打卡地标数据
+        const LANDMARKS = [
+            {
+                id: 'pearl_plaza',
+                name: '东方明珠城市广场',
+                pos: new THREE.Vector3(0, 0, 26),
+                radius: 8,
+                points: 200,
+                desc: '东方明珠广播电视塔坐落于黄浦江畔，塔高468米。三根斜撑巨柱稳稳托起大小不一的璀璨球体，夜幕降临时分，明珠灯光秀与浦江两岸交相辉映。'
+            },
+            {
+                id: 'binjiang_walk',
+                name: '陆家嘴滨江大道',
+                pos: new THREE.Vector3(-56, 0, 10),
+                radius: 9,
+                points: 200,
+                desc: '紧邻黄浦江的亲水漫步长廊，全长约2.5公里。在这里可以吹着江风，欣赏江面上穿梭的游轮，隔江远眺外滩万国建筑博览群。'
+            },
+            {
+                id: 'shanghai_tower',
+                name: '上海中心大厦（中国第一高楼）',
+                pos: new THREE.Vector3(58, 0, -28),
+                radius: 10,
+                points: 250,
+                desc: '建筑总高度632米，外观呈优雅的螺旋上升造型，每层扭曲约1度以有效削减强风荷载，象征着上海不断向上的城市精神。'
+            },
+            {
+                id: 'swfc_jinmao',
+                name: '陆家嘴“三件套”核心区',
+                pos: new THREE.Vector3(42, 0, 18),
+                radius: 9,
+                points: 200,
+                desc: '环球金融中心（开瓶器造型）、金茂大厦（融合中国传统宝塔韵律）与上海中心大厦在此比肩而立，构成了世界闻名的现代金融天际线。'
+            },
+            {
+                id: 'lujiazui_skybridge',
+                name: '明珠环天桥观景台',
+                pos: new THREE.Vector3(-18, 0, 42),
+                radius: 8,
+                points: 150,
+                desc: '连接陆家嘴各大金融中心与地铁站的环形空中连廊，也是摄影师拍摄东方明珠与车水马龙同框的绝佳机位。'
+            }
+        ];
+
+        // ==================== 初始化入口 ====================
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // 1. 初始化场景与时钟
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x23385e, 0.0018);
+            clock = new THREE.Clock();
+
+            // 2. 透视相机
+            camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.2, 800);
+
+            // 3. 渲染器（开启 preserveDrawingBuffer 以便拍照截屏，提高曝光度）
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.32;
+            container.appendChild(renderer.domElement);
+
+            // 4. 构建世界元素
+            setupLighting();
+            buildGroundAndRiver();
+            buildOrientalPearlTower();
+            buildLujiazuiSkyline();
+            buildStreetProps();
+            buildCheckpoints();
+            buildPlayerCharacter();
+
+            // 5. 设置默认夜景氛围
+            applyTimeTheme('night');
+
+            // 6. 绑定交互事件
+            bindEvents();
+        }
+
+        // ==================== 光照系统（整体提亮） ====================
+        function setupLighting() {
+            hemiLight = new THREE.HemisphereLight(0xc2dcff, 0x5c6885, 1.35);
+            scene.add(hemiLight);
+
+            ambientLight = new THREE.AmbientLight(0x7c8db0, 1.05);
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0xfff1dc, 2.0);
+            dirLight.position.set(120, 180, 90);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 10;
+            dirLight.shadow.camera.far = 450;
+            const d = 130;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+        }
+
+        // ==================== 地面、道路、广场与黄浦江 ====================
+        function buildGroundAndRiver() {
+            // 陆地主地面（陆家嘴半岛区域 x > -68，调亮为清爽石板灰蓝）
+            const landGeo = new THREE.BoxGeometry(320, 2, 360);
+            const landMat = new THREE.MeshStandardMaterial({
+                color: 0x43506b,
+                roughness: 0.78,
+                metalness: 0.12
+            });
+            const landMesh = new THREE.Mesh(landGeo, landMat);
+            landMesh.position.set(92, -1, 0);
+            landMesh.receiveShadow = true;
+            scene.add(landMesh);
+
+            // 东方明珠圆形中央广场铺装（明亮浅灰蓝）
+            const plazaGeo = new THREE.CylinderGeometry(36, 36, 0.12, 64);
+            const plazaMat = new THREE.MeshStandardMaterial({
+                color: 0x6b7c9e,
+                roughness: 0.55,
+                metalness: 0.18
+            });
+            const plaza = new THREE.Mesh(plazaGeo, plazaMat);
+            plaza.position.set(0, 0.04, 0);
+            plaza.receiveShadow = true;
+            scene.add(plaza);
+
+            // 广场发光装饰圆环
+            const ringGeo = new THREE.RingGeometry(28, 28.6, 64);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf472b6, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.set(0, 0.12, 0);
+            scene.add(ring);
+
+            // 世纪大道与环岛道路网格
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x313d54, roughness: 0.85 });
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+
+            // 环岛主路
+            const ringRoadGeo = new THREE.RingGeometry(36.5, 48, 64);
+            const ringRoad = new THREE.Mesh(ringRoadGeo, roadMat);
+            ringRoad.rotation.x = -Math.PI / 2;
+            ringRoad.position.y = 0.03;
+            scene.add(ringRoad);
+
+            // 南北向主干道（富城路 / 陆家嘴西路）
+            const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(14, 280), roadMat);
+            roadNS.rotation.x = -Math.PI / 2;
+            roadNS.position.set(-42, 0.03, 0);
+            scene.add(roadNS);
+
+            // 东西向世纪大道
+            const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(220, 16), roadMat);
+            roadEW.rotation.x = -Math.PI / 2;
+            roadEW.position.set(70, 0.03, 45);
+            scene.add(roadEW);
+
+            // 道路虚线标线
+            for (let z = -120; z <= 120; z += 12) {
+                const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 5), stripeMat);
+                dash.rotation.x = -Math.PI / 2;
+                dash.position.set(-42, 0.05, z);
+                scene.add(dash);
+            }
+            for (let x = 48; x <= 165; x += 12) {
+                const dash = new THREE.Mesh(new THREE.PlaneGeometry(5, 0.4), stripeMat);
+                dash.rotation.x = -Math.PI / 2;
+                dash.position.set(x, 0.05, 45);
+                scene.add(dash);
+            }
+
+            // 滨江大道木栈道与护栏 (x = -68)
+            const boardwalk = new THREE.Mesh(
+                new THREE.BoxGeometry(10, 0.3, 340),
+                new THREE.MeshStandardMaterial({ color: 0x8b6344, roughness: 0.72 })
+            );
+            boardwalk.position.set(-63, 0.15, 0);
+            boardwalk.receiveShadow = true;
+            scene.add(boardwalk);
+
+            // 滨江白色安全护栏（带碰撞防止掉进江里）
+            const railMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.45, roughness: 0.28 });
+            const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 340), railMat);
+            topRail.position.set(-67.8, 0.65, 0);
+            scene.add(topRail);
+            colliders.push({ minX: -75, maxX: -67.5, minZ: -170, maxZ: 170 });
+
+            // 黄浦江水面 (x < -68，调亮为清澈碧蓝江水)
+            const riverGeo = new THREE.PlaneGeometry(240, 420);
+            const riverMat = new THREE.MeshStandardMaterial({
+                color: 0x1d6fa5,
+                roughness: 0.2,
+                metalness: 0.65
+            });
+            const river = new THREE.Mesh(riverGeo, riverMat);
+            river.rotation.x = -Math.PI / 2;
+            river.position.set(-188, -0.6, 0);
+            scene.add(river);
+
+            // 对岸外滩远景轮廓剪影（增强纵深感）
+            const bundGroup = new THREE.Group();
+            const bundBuildingMat = new THREE.MeshStandardMaterial({ color: 0x56678a, roughness: 0.65 });
+            const bundGoldMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+            for (let z = -150; z <= 150; z += 24) {
+                const h = 14 + Math.sin(z * 0.1) * 5;
+                const w = 16;
+                const b = new THREE.Mesh(new THREE.BoxGeometry(14, h, w), bundBuildingMat);
+                b.position.set(-220, h / 2 - 0.5, z);
+                bundGroup.add(b);
+
+                // 外滩金色屋顶灯带
+                const trim = new THREE.Mesh(new THREE.BoxGeometry(14.3, 0.6, w + 0.3), bundGoldMat);
+                trim.position.set(-220, h - 0.5, z);
+                bundGroup.add(trim);
+            }
+            scene.add(bundGroup);
+
+            // 创建几艘在黄浦江航行的观光游船
+            createRiverBoats();
+        }
+
+        function createRiverBoats() {
+            const boatColors = [0xf472b6, 0x22d3ee, 0xfbbf24];
+            for (let i = 0; i < 3; i++) {
+                const boat = new THREE.Group();
+                // 船体
+                const hull = new THREE.Mesh(
+                    new THREE.BoxGeometry(5, 1.8, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35 })
+                );
+                hull.position.y = 0.4;
+                boat.add(hull);
+
+                // 船舱
+                const cabin = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.8, 1.6, 10),
+                    new THREE.MeshStandardMaterial({ color: 0x3b4d6e, roughness: 0.25 })
+                );
+                cabin.position.y = 1.9;
+                boat.add(cabin);
+
+                // 游船霓虹灯条
+                const neon = new THREE.Mesh(
+                    new THREE.BoxGeometry(5.2, 0.35, 16.2),
+                    new THREE.MeshBasicMaterial({ color: boatColors[i] })
+                );
+                neon.position.y = 1.1;
+                boat.add(neon);
+
+                const dir = i % 2 === 0 ? 1 : -1;
+                boat.position.set(-92 - i * 24, -0.5, (i - 1) * 90);
+                scene.add(boat);
+                boats.push({ mesh: boat, speed: (5 + i * 1.8) * dir });
+            }
+        }
+
+        // ==================== 东方明珠广播电视塔（精细程序化建模） ====================
+        function buildOrientalPearlTower() {
+            pearlTowerGroup = new THREE.Group();
+            pearlTowerGroup.position.set(0, 0, 0);
+
+            // 材质定义（明亮银白与粉晶光泽）
+            const concreteMat = new THREE.MeshStandardMaterial({
+                color: 0xeff6ff,
+                roughness: 0.38,
+                metalness: 0.32
+            });
+
+            const spherePinkMat = new THREE.MeshStandardMaterial({
+                color: 0xf9a8d4,
+                emissive: 0xf472b6,
+                emissiveIntensity: 0.72,
+                roughness: 0.2,
+                metalness: 0.55
+            });
+
+            const ringCyanMat = new THREE.MeshBasicMaterial({
+                color: 0x67e8f9
+            });
+
+            const ringMagentaMat = new THREE.MeshBasicMaterial({
+                color: 0xfb7185
+            });
+
+            // 1. 底部基座大厅（三层圆形展厅）
+            const baseHall1 = new THREE.Mesh(new THREE.CylinderGeometry(16, 18, 4, 32), concreteMat);
+            baseHall1.position.y = 2;
+            baseHall1.castShadow = true;
+            pearlTowerGroup.add(baseHall1);
+
+            const baseHall2 = new THREE.Mesh(new THREE.CylinderGeometry(12, 14, 3.5, 32), concreteMat);
+            baseHall2.position.y = 5.5;
+            pearlTowerGroup.add(baseHall2);
+
+            // 添加基座碰撞箱
+            colliders.push({ minX: -15, maxX: 15, minZ: -15, maxZ: 15 });
+
+            // 2. 标志性三根斜撑巨柱（120度均匀分布，向中心倾斜汇聚）
+            for (let i = 0; i < 3; i++) {
+                const angle = (i * Math.PI * 2) / 3 + Math.PI / 6;
+                const legPivot = new THREE.Group();
+                legPivot.rotation.y = angle;
+
+                // 斜撑主柱
+                const legGeo = new THREE.CylinderGeometry(1.5, 2.3, 44, 20);
+                const legMesh = new THREE.Mesh(legGeo, concreteMat);
+                legMesh.position.set(10.5, 20, 0);
+                legMesh.rotation.z = 0.28; // 向内倾斜
+                legMesh.castShadow = true;
+                legPivot.add(legMesh);
+
+                // 斜撑上的发光小装饰球
+                const smallSphere = new THREE.Mesh(new THREE.SphereGeometry(2.4, 24, 24), spherePinkMat);
+                smallSphere.position.set(11.8, 15, 0);
+                legPivot.add(smallSphere);
+
+                pearlTowerGroup.add(legPivot);
+            }
+
+            // 3. 三根垂直主立柱（贯穿下球体与上球体）
+            for (let i = 0; i < 3; i++) {
+                const angle = (i * Math.PI * 2) / 3 - Math.PI / 6;
+                const radius = 4.6;
+                const colGeo = new THREE.CylinderGeometry(1.35, 1.35, 128, 18);
+                const colMesh = new THREE.Mesh(colGeo, concreteMat);
+                colMesh.position.set(Math.cos(angle) * radius, 68, Math.sin(angle) * radius);
+                colMesh.castShadow = true;
+                pearlTowerGroup.add(colMesh);
+            }
+
+            // 4. 水平连接环梁（增强结构细节）
+            const beamHeights = [28, 56, 72, 88, 104];
+            beamHeights.forEach((h, idx) => {
+                const beam = new THREE.Mesh(new THREE.TorusGeometry(4.8, 0.55, 12, 32), concreteMat);
+                beam.rotation.x = Math.PI / 2;
+                beam.position.y = h;
+                pearlTowerGroup.add(beam);
+
+                // 霓虹光环
+                const lightRing = new THREE.Mesh(
+                    new THREE.TorusGeometry(5.3, 0.18, 8, 36),
+                    idx % 2 === 0 ? ringCyanMat : ringMagentaMat
+                );
+                lightRing.rotation.x = Math.PI / 2;
+                lightRing.position.y = h;
+                pearlTowerGroup.add(lightRing);
+                pearlRings.push(lightRing);
+            });
+
+            // 5. 下球体（直径最大的标志性主球体，y = 42）
+            const lowerSphere = new THREE.Mesh(new THREE.SphereGeometry(12.5, 40, 40), spherePinkMat);
+            lowerSphere.position.y = 42;
+            lowerSphere.castShadow = true;
+            pearlTowerGroup.add(lowerSphere);
+
+            // 下球体赤道发光环
+            const lowerEquator = new THREE.Mesh(new THREE.TorusGeometry(12.8, 0.35, 12, 48), ringCyanMat);
+            lowerEquator.rotation.x = Math.PI / 2;
+            lowerEquator.position.y = 42;
+            pearlTowerGroup.add(lowerEquator);
+            pearlRings.push(lowerEquator);
+
+            // 6. 上球体（263米主观光层，y = 122）
+            const upperSphere = new THREE.Mesh(new THREE.SphereGeometry(9.2, 36, 36), spherePinkMat);
+            upperSphere.position.y = 122;
+            pearlTowerGroup.add(upperSphere);
+
+            const upperEquator = new THREE.Mesh(new THREE.TorusGeometry(9.5, 0.3, 12, 48), ringMagentaMat);
+            upperEquator.rotation.x = Math.PI / 2;
+            upperEquator.position.y = 122;
+            pearlTowerGroup.add(upperEquator);
+            pearlRings.push(upperEquator);
+
+            // 7. 太空舱小球体（350米太空舱，y = 148）
+            const topColumn = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.2, 22, 20), concreteMat);
+            topColumn.position.y = 138;
+            pearlTowerGroup.add(topColumn);
+
+            const spaceCapsule = new THREE.Mesh(new THREE.SphereGeometry(4.2, 28, 28), spherePinkMat);
+            spaceCapsule.position.y = 150;
+            pearlTowerGroup.add(spaceCapsule);
+
+            // 8. 发射天线塔尖（直插云霄至 y = 192）
+            const spireBase = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.3, 18, 16), concreteMat);
+            spireBase.position.y = 162;
+            pearlTowerGroup.add(spireBase);
+
+            const spireTip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.65, 22, 12),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            spireTip.position.y = 181;
+            pearlTowerGroup.add(spireTip);
+
+            // 塔尖航空障碍灯
+            const beaconLight = new THREE.PointLight(0xf472b6, 3.0, 150);
+            beaconLight.position.set(0, 45, 0);
+            pearlTowerGroup.add(beaconLight);
+            pearlLights.push(beaconLight);
+
+            const topBeacon = new THREE.PointLight(0x67e8f9, 2.4, 130);
+            topBeacon.position.set(0, 125, 0);
+            pearlTowerGroup.add(topBeacon);
+            pearlLights.push(topBeacon);
+
+            scene.add(pearlTowerGroup);
+        }
+
+        // ==================== 陆家嘴天际线建筑群 ====================
+        function buildLujiazuiSkyline() {
+            // 创建玻璃幕墙发光窗户纹理（提高明暗对比与整体亮度）
+            const winTex = createWindowTexture();
+            const glassMatCyan = new THREE.MeshStandardMaterial({
+                color: 0x3b82f6,
+                emissive: 0x7dd3fc,
+                emissiveMap: winTex,
+                emissiveIntensity: 0.78,
+                roughness: 0.2,
+                metalness: 0.72
+            });
+            const glassMatGold = new THREE.MeshStandardMaterial({
+                color: 0x64748b,
+                emissive: 0xfde047,
+                emissiveMap: winTex,
+                emissiveIntensity: 0.72,
+                roughness: 0.24,
+                metalness: 0.68
+            });
+            buildingWindowMats.push(glassMatCyan, glassMatGold);
+
+            // 1. 上海中心大厦（632米，螺旋扭曲塔身）
+            const shTower = new THREE.Group();
+            shTower.position.set(78, 0, -45);
+            const segments = 14;
+            const segHeight = 16;
+            for (let i = 0; i < segments; i++) {
+                const scale = 1 - i * 0.032;
+                const geo = new THREE.CylinderGeometry(13 * scale, 13.4 * scale, segHeight + 0.3, 6);
+                const mesh = new THREE.Mesh(geo, glassMatCyan);
+                mesh.position.y = i * segHeight + segHeight / 2;
+                mesh.rotation.y = i * 0.14; // 标志性螺旋扭转
+                mesh.castShadow = true;
+                shTower.add(mesh);
+            }
+            scene.add(shTower);
+            colliders.push({ minX: 64, maxX: 92, minZ: -59, maxZ: -31 });
+
+            // 2. 上海环球金融中心（开瓶器造型）
+            const swfc = new THREE.Group();
+            swfc.position.set(76, 0, 16);
+            const swfcBody = new THREE.Mesh(new THREE.BoxGeometry(20, 145, 20), glassMatCyan);
+            swfcBody.position.y = 72.5;
+            swfcBody.castShadow = true;
+            swfc.add(swfcBody);
+
+            // 顶部梯形“风洞/开瓶器”框架
+            const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(4, 32, 20), glassMatCyan);
+            leftPillar.position.set(-8, 161, 0);
+            swfc.add(leftPillar);
+            const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(4, 32, 20), glassMatCyan);
+            rightPillar.position.set(8, 161, 0);
+            swfc.add(rightPillar);
+            const topBridge = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 20), new THREE.MeshBasicMaterial({ color: 0x7dd3fc }));
+            topBridge.position.set(0, 178, 0);
+            swfc.add(topBridge);
+            scene.add(swfc);
+            colliders.push({ minX: 65, maxX: 87, minZ: 5, maxZ: 27 });
+
+            // 3. 金茂大厦（宝塔式逐层内收结构）
+            const jinmao = new THREE.Group();
+            jinmao.position.set(46, 0, -14);
+            const tiers = [
+                { w: 20, h: 45, y: 22.5 },
+                { w: 17, h: 35, y: 62.5 },
+                { w: 14, h: 30, y: 95 },
+                { w: 11, h: 24, y: 122 },
+                { w: 7, h: 16, y: 142 }
+            ];
+            tiers.forEach(t => {
+                const tierMesh = new THREE.Mesh(new THREE.BoxGeometry(t.w, t.h, t.w), glassMatGold);
+                tierMesh.position.y = t.y;
+                tierMesh.castShadow = true;
+                jinmao.add(tierMesh);
+            });
+            const jmSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 1.5, 20, 12), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+            jmSpire.position.y = 160;
+            jinmao.add(jmSpire);
+            scene.add(jinmao);
+            colliders.push({ minX: 35, maxX: 57, minZ: -25, maxZ: -3 });
+
+            // 4. 周边现代金融写字楼群（正大广场、国金中心双子塔等）
+            const extraBuildings = [
+                { x: -18, z: 74, w: 28, d: 22, h: 42, mat: glassMatGold },  // 正大广场方向
+                { x: 26, z: 76, w: 20, d: 20, h: 98, mat: glassMatCyan },   // 国金中心南塔
+                { x: 54, z: 76, w: 20, d: 20, h: 106, mat: glassMatCyan },  // 国金中心北塔
+                { x: -12, z: -72, w: 24, d: 22, h: 86, mat: glassMatCyan }, // 滨江金融大厦
+                { x: 28, z: -76, w: 22, d: 22, h: 74, mat: glassMatGold },
+                { x: 115, z: -15, w: 24, d: 24, h: 92, mat: glassMatGold },
+                { x: 115, z: 32, w: 22, d: 26, h: 68, mat: glassMatCyan }
+            ];
+
+            extraBuildings.forEach(b => {
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(b.w, b.h, b.d), b.mat);
+                mesh.position.set(b.x, b.h / 2, b.z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+
+                // 楼顶霓虹勾边
+                const roofTrim = new THREE.Mesh(
+                    new THREE.BoxGeometry(b.w + 0.4, 0.8, b.d + 0.4),
+                    new THREE.MeshBasicMaterial({ color: b.mat === glassMatCyan ? 0x38bdf8 : 0xfbbf24 })
+                );
+                roofTrim.position.set(b.x, b.h + 0.4, b.z);
+                scene.add(roofTrim);
+
+                colliders.push({
+                    minX: b.x - b.w / 2 - 0.8,
+                    maxX: b.x + b.w / 2 + 0.8,
+                    minZ: b.z - b.d / 2 - 0.8,
+                    maxZ: b.z + b.d / 2 + 0.8
+                });
+            });
+        }
+
+        // 程序化生成摩天大楼发光玻璃幕墙纹理
+        function createWindowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#24344d';
+            ctx.fillRect(0, 0, 128, 256);
+
+            for (let y = 4; y < 252; y += 8) {
+                for (let x = 4; x < 124; x += 8) {
+                    if (Math.random() > 0.22) {
+                        const brightness = Math.floor(195 + Math.random() * 60);
+                        ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+                        ctx.fillRect(x, y, 5, 4);
+                    }
+                }
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(3, 8);
+            return tex;
+        }
+
+        // ==================== 街道景观：路灯、绿化树、长椅 ====================
+        function buildStreetProps() {
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7c4a27, roughness: 0.82 });
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.72 });
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.32 });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3 });
+
+            // 沿滨江大道与广场外围种植行道树和路灯
+            for (let z = -110; z <= 110; z += 22) {
+                // 滨江路灯
+                createStreetLamp(-56, z, poleMat, bulbMat);
+                // 滨江行道树
+                if (Math.abs(z - 10) > 10) {
+                    createTree(-52, z + 8, trunkMat, leafMat);
+                }
+            }
+
+            // 环岛周边路灯与绿化
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * Math.PI * 2) / 12;
+                const r = 34.5;
+                const lx = Math.cos(angle) * r;
+                const lz = Math.sin(angle) * r;
+                createStreetLamp(lx, lz, poleMat, bulbMat);
+
+                const tr = 31.5;
+                createTree(Math.cos(angle + 0.15) * tr, Math.sin(angle + 0.15) * tr, trunkMat, leafMat);
+            }
+        }
+
+        function createStreetLamp(x, z, poleMat, bulbMat) {
+            const lamp = new THREE.Group();
+            lamp.position.set(x, 0, z);
+            const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 6.5, 8), poleMat);
+            pole.position.y = 3.25;
+            lamp.add(pole);
+
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 12), bulbMat);
+            bulb.position.y = 6.6;
+            lamp.add(bulb);
+            streetLampBulbs.push(bulb);
+
+            scene.add(lamp);
+        }
+
+        function createTree(x, z, trunkMat, leafMat) {
+            const tree = new THREE.Group();
+            tree.position.set(x, 0, z);
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 2.4, 8), trunkMat);
+            trunk.position.y = 1.2;
+            tree.add(trunk);
+
+            const crown1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.8, 1), leafMat);
+            crown1.position.y = 3.4;
+            crown1.castShadow = true;
+            tree.add(crown1);
+
+            scene.add(tree);
+        }
+
+        // ==================== 景点打卡光柱标记 ====================
+        function buildCheckpoints() {
+            LANDMARKS.forEach(lm => {
+                const group = new THREE.Group();
+                group.position.copy(lm.pos);
+
+                // 地面光环
+                const ringGeo = new THREE.RingGeometry(2.6, 3.2, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: 0xfbbf24,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.y = 0.18;
+                group.add(ring);
+
+                // 悬浮菱形水晶图标
+                const gemGeo = new THREE.OctahedronGeometry(0.9, 0);
+                const gemMat = new THREE.MeshBasicMaterial({
+                    color: 0xfde047,
+                    wireframe: false
+                });
+                const gem = new THREE.Mesh(gemGeo, gemMat);
+                gem.position.y = 2.6;
+                group.add(gem);
+
+                // 半透明光柱
+                const beamGeo = new THREE.CylinderGeometry(2.5, 2.5, 8, 24, 1, true);
+                const beamMat = new THREE.MeshBasicMaterial({
+                    color: 0xfbbf24,
+                    transparent: true,
+                    opacity: 0.2,
+                    side: THREE.DoubleSide
+                });
+                const beam = new THREE.Mesh(beamGeo, beamMat);
+                beam.position.y = 4;
+                group.add(beam);
+
+                scene.add(group);
+                checkpointMeshes.push({ id: lm.id, group, gem, ring, beam });
+            });
+        }
+
+        // ==================== 玩家 3D 角色模型 ====================
+        function buildPlayerCharacter() {
+            playerGroup = new THREE.Group();
+            playerGroup.position.copy(state.player.pos);
+
+            const jacketMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.45 }); // 明亮粉红夹克
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x3b4d6e, roughness: 0.65 });
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.5 });
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x2a364d, roughness: 0.7 });
+
+            // 躯干
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.25, 0.52), jacketMat);
+            torso.position.y = 1.65;
+            torso.castShadow = true;
+            playerGroup.add(torso);
+
+            // 头部组合
+            headGroup = new THREE.Group();
+            headGroup.position.y = 2.6;
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.68, 0.68), skinMat);
+            head.castShadow = true;
+            headGroup.add(head);
+
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.25, 0.72), hairMat);
+            hair.position.y = 0.28;
+            headGroup.add(hair);
+            playerGroup.add(headGroup);
+
+            // 左臂与右臂
+            const armGeo = new THREE.BoxGeometry(0.32, 1.05, 0.34);
+            leftArm = new THREE.Mesh(armGeo, jacketMat);
+            leftArm.position.set(-0.68, 1.7, 0);
+            playerGroup.add(leftArm);
+
+            rightArm = new THREE.Mesh(armGeo, jacketMat);
+            rightArm.position.set(0.68, 1.7, 0);
+            playerGroup.add(rightArm);
+
+            // 左腿与右腿
+            const legGeo = new THREE.BoxGeometry(0.38, 1.05, 0.4);
+            leftLeg = new THREE.Mesh(legGeo, pantsMat);
+            leftLeg.position.set(-0.26, 0.52, 0);
+            playerGroup.add(leftLeg);
+
+            rightLeg = new THREE.Mesh(legGeo, pantsMat);
+            rightLeg.position.set(0.26, 0.52, 0);
+            playerGroup.add(rightLeg);
+
+            scene.add(playerGroup);
+        }
+
+        // ==================== 时间/天气主题切换（整体调亮） ====================
+        function applyTimeTheme(mode) {
+            state.timeMode = mode;
+
+            // 更新按钮高亮
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                if (btn.dataset.time === mode) {
+                    btn.classList.add('bg-pink-500', 'text-white');
+                    btn.classList.remove('text-slate-200');
+                } else {
+                    btn.classList.remove('bg-pink-500', 'text-white');
+                    btn.classList.add('text-slate-200');
+                }
+            });
+
+            if (mode === 'night') {
+                // 明亮清透的蓝紫夜空与城市灯光
+                scene.background = new THREE.Color(0x223861);
+                scene.fog.color.setHex(0x28416e);
+                hemiLight.color.setHex(0xc4dcff);
+                hemiLight.intensity = 1.35;
+                ambientLight.intensity = 1.05;
+                dirLight.color.setHex(0xdbeafe);
+                dirLight.intensity = 1.75;
+                pearlLights.forEach(l => l.intensity = 3.2);
+                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.85);
+            } else if (mode === 'sunset') {
+                scene.background = new THREE.Color(0x7c4d7a);
+                scene.fog.color.setHex(0x965e7e);
+                hemiLight.color.setHex(0xfdba74);
+                hemiLight.intensity = 1.45;
+                ambientLight.intensity = 1.1;
+                dirLight.color.setHex(0xffb36b);
+                dirLight.intensity = 2.35;
+                pearlLights.forEach(l => l.intensity = 2.0);
+                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.52);
+            } else if (mode === 'day') {
+                scene.background = new THREE.Color(0x7dd3fc);
+                scene.fog.color.setHex(0xbae6fd);
+                hemiLight.color.setHex(0xf0f9ff);
+                hemiLight.intensity = 1.75;
+                ambientLight.intensity = 1.25;
+                dirLight.color.setHex(0xffffff);
+                dirLight.intensity = 2.65;
+                pearlLights.forEach(l => l.intensity = 0.5);
+                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.16);
+            }
+        }
+
+        // ==================== 玩家移动与碰撞检测 ====================
+        function updatePlayer(dt) {
+            if (!state.started) return;
+
+            const p = state.player;
+            let moveForward = 0;
+            let moveRight = 0;
+
+            if (state.keys.w || state.keys.ArrowUp) moveForward += 1;
+            if (state.keys.s || state.keys.ArrowDown) moveForward -= 1;
+            if (state.keys.d || state.keys.ArrowRight) moveRight += 1;
+            if (state.keys.a || state.keys.ArrowLeft) moveRight -= 1;
+
+            // 合并虚拟摇杆输入
+            if (state.joystick.active) {
+                moveRight += state.joystick.dx;
+                moveForward -= state.joystick.dy;
+            }
+
+            // 归一化输入向量
+            const inputLen = Math.hypot(moveForward, moveRight);
+            if (inputLen > 1) {
+                moveForward /= inputLen;
+                moveRight /= inputLen;
+            }
+
+            p.isMoving = inputLen > 0.05;
+            p.isSprinting = state.keys.Shift && p.isMoving;
+
+            const speed = p.isSprinting ? 22 : 12;
+
+            if (p.isMoving) {
+                // 基于当前相机朝向计算水平移动方向
+                const camYaw = state.camera.yaw;
+                const forwardDir = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
+                const rightDir = new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw));
+
+                const moveVec = new THREE.Vector3()
+                    .addScaledVector(forwardDir, moveForward)
+                    .addScaledVector(rightDir, moveRight)
+                    .normalize();
+
+                const nextX = p.pos.x + moveVec.x * speed * dt;
+                const nextZ = p.pos.z + moveVec.z * speed * dt;
+
+                // 分轴进行碰撞检测，允许贴墙顺滑滑动
+                if (!checkCollision(nextX, p.pos.z)) {
+                    p.pos.x = nextX;
+                }
+                if (!checkCollision(p.pos.x, nextZ)) {
+                    p.pos.z = nextZ;
+                }
+
+                // 角色朝向平滑转向移动方向
+                const targetYaw = Math.atan2(moveVec.x, moveVec.z);
+                let diff = targetYaw - p.yaw;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                p.yaw += diff * Math.min(1, dt * 12);
+            }
+
+            // 跳跃与重力
+            if (state.keys.Space && p.onGround) {
+                p.vel.y = 11.5;
+                p.onGround = false;
+            }
+            p.vel.y -= 28 * dt;
+            p.pos.y += p.vel.y * dt;
+
+            if (p.pos.y <= 0) {
+                p.pos.y = 0;
+                p.vel.y = 0;
+                p.onGround = true;
+            }
+
+            // 同步角色模型位置与摆臂动画
+            playerGroup.position.copy(p.pos);
+            playerGroup.rotation.y = p.yaw;
+
+            if (p.isMoving && p.onGround) {
+                p.walkCycle += dt * (p.isSprinting ? 14 : 9);
+                const swing = Math.sin(p.walkCycle) * 0.65;
+                leftLeg.rotation.x = swing;
+                rightLeg.rotation.x = -swing;
+                leftArm.rotation.x = -swing * 0.8;
+                rightArm.rotation.x = swing * 0.8;
+            } else {
+                leftLeg.rotation.x *= 0.85;
+                rightLeg.rotation.x *= 0.85;
+                leftArm.rotation.x *= 0.85;
+                rightArm.rotation.x *= 0.85;
+            }
+
+            // 第一人称下隐藏自身角色模型以免遮挡视线
+            playerGroup.visible = state.cameraMode === 'third';
+        }
+
+        function checkCollision(x, z) {
+            // 世界边界限制
+            if (x < -67.2 || x > 140 || z < -130 || z > 130) return true;
+
+            for (let i = 0; i < colliders.length; i++) {
+                const c = colliders[i];
+                if (x > c.minX && x < c.maxX && z > c.minZ && z < c.maxZ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ==================== 相机跟随与视角更新 ====================
+        function updateCamera() {
+            const p = state.player.pos;
+            const c = state.camera;
+
+            if (state.cameraMode === 'first') {
+                // 第一人称视角：眼睛高度
+                const eyePos = new THREE.Vector3(p.x, p.y + 2.55, p.z);
+                camera.position.copy(eyePos);
+
+                const lookDir = new THREE.Vector3(
+                    -Math.sin(c.yaw) * Math.cos(c.pitch),
+                    Math.sin(c.pitch),
+                    -Math.cos(c.yaw) * Math.cos(c.pitch)
+                );
+                camera.lookAt(eyePos.clone().add(lookDir));
+            } else {
+                // 第三人称环绕跟随视角
+                const target = new THREE.Vector3(p.x, p.y + 2.3, p.z);
+                const offsetX = Math.sin(c.yaw) * Math.cos(c.pitch) * c.distance;
+                const offsetY = Math.sin(c.pitch) * c.distance;
+                const offsetZ = Math.cos(c.yaw) * Math.cos(c.pitch) * c.distance;
+
+                const desiredPos = new THREE.Vector3(
+                    target.x + offsetX,
+                    Math.max(0.8, target.y + offsetY),
+                    target.z + offsetZ
+                );
+                camera.position.lerp(desiredPos, 0.18);
+                camera.lookAt(target);
+            }
+        }
+
+        // ==================== 景点打卡检测与动态特效 ====================
+        function updateWorldAnimations(elapsed, dt) {
+            // 1. 东方明珠霓虹光环动态呼吸与色彩流转
+            pearlRings.forEach((ring, i) => {
+                ring.rotation.z = elapsed * (i % 2 === 0 ? 0.5 : -0.5);
+            });
+            if (state.timeMode === 'night') {
+                const hue = (elapsed * 0.06) % 1;
+                pearlLights[0].color.setHSL(hue, 0.85, 0.65);
+            }
+
+            // 2. 黄浦江游船航行循环
+            boats.forEach(b => {
+                b.mesh.position.z += b.speed * dt;
+                if (b.mesh.position.z > 170) b.mesh.position.z = -170;
+                if (b.mesh.position.z < -170) b.mesh.position.z = 170;
+            });
+
+            // 3. 打卡光柱旋转与距离触发检测
+            let nearAnyLandmark = null;
+            checkpointMeshes.forEach(cp => {
+                cp.gem.rotation.y = elapsed * 2;
+                cp.gem.position.y = 2.6 + Math.sin(elapsed * 3) * 0.25;
+
+                const lmData = LANDMARKS.find(item => item.id === cp.id);
+                const dist = Math.hypot(
+                    state.player.pos.x - lmData.pos.x,
+                    state.player.pos.z - lmData.pos.z
+                );
+
+                if (dist < lmData.radius) {
+                    nearAnyLandmark = lmData;
+                }
+            });
+
+            if (nearAnyLandmark && state.activeLandmarkId !== nearAnyLandmark.id) {
+                triggerLandmark(nearAnyLandmark);
+            } else if (!nearAnyLandmark && state.activeLandmarkId !== null) {
+                state.activeLandmarkId = null;
+                hideLandmarkCard();
+            }
+        }
+
+        function triggerLandmark(lm) {
+            state.activeLandmarkId = lm.id;
+            const isNew = !state.unlockedLandmarks.has(lm.id);
+
+            if (isNew) {
+                state.unlockedLandmarks.add(lm.id);
+                state.score += lm.points;
+                document.getElementById('landmark-counter').textContent = `${state.unlockedLandmarks.size} / ${LANDMARKS.length}`;
+                document.getElementById('score-display').textContent = state.score;
+                document.getElementById('landmark-badge').textContent = `✨ 解锁新地标 (+${lm.points} 积分)`;
+
+                // 已打卡光柱变为翠绿色
+                const cpObj = checkpointMeshes.find(c => c.id === lm.id);
+                if (cpObj) {
+                    cpObj.ring.material.color.setHex(0x34d399);
+                    cpObj.gem.material.color.setHex(0x6ee7b7);
+                    cpObj.beam.material.color.setHex(0x34d399);
+                }
+            } else {
+                document.getElementById('landmark-badge').textContent = '📍 正在游览地标';
+            }
+
+            document.getElementById('landmark-title').textContent = lm.name;
+            document.getElementById('landmark-desc').textContent = lm.desc;
+
+            const card = document.getElementById('landmark-card');
+            card.classList.remove('opacity-0', 'translate-y-6', 'pointer-events-none');
+        }
+
+        function hideLandmarkCard() {
+            const card = document.getElementById('landmark-card');
+            card.classList.add('opacity-0', 'translate-y-6', 'pointer-events-none');
+        }
+
+        // ==================== 小地图雷达绘制 ====================
+        function drawMinimap() {
+            const canvas = document.getElementById('minimap-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const scale = 0.62; // 世界坐标缩放比例
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 背景与黄浦江水域
+            ctx.fillStyle = '#1e2f4d';
+            ctx.fillRect(0, 0, w, h);
+
+            const riverEdgeX = cx + (-68 - state.player.pos.x) * scale;
+            if (riverEdgeX > 0) {
+                ctx.fillStyle = '#2589bd';
+                ctx.fillRect(0, 0, Math.min(w, riverEdgeX), h);
+            }
+
+            // 绘制地标打卡点
+            LANDMARKS.forEach(lm => {
+                const mx = cx + (lm.pos.x - state.player.pos.x) * scale;
+                const my = cy + (lm.pos.z - state.player.pos.z) * scale;
+                if (mx > 4 && mx < w - 4 && my > 4 && my < h - 4) {
+                    ctx.beginPath();
+                    ctx.arc(mx, my, 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = state.unlockedLandmarks.has(lm.id) ? '#34d399' : '#fbbf24';
+                    ctx.fill();
+                }
+            });
+
+            // 绘制东方明珠塔位置
+            const pearlX = cx + (0 - state.player.pos.x) * scale;
+            const pearlY = cy + (0 - state.player.pos.z) * scale;
+            ctx.beginPath();
+            ctx.arc(pearlX, pearlY, 5.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#f472b6';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // 绘制中心玩家箭头
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(-state.camera.yaw);
+            ctx.beginPath();
+            ctx.moveTo(0, -6);
+            ctx.lineTo(4.5, 5);
+            ctx.lineTo(0, 2.5);
+            ctx.lineTo(-4.5, 5);
+            ctx.closePath();
+            ctx.fillStyle = '#67e8f9';
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // ==================== 事件监听绑定 ====================
+        function bindEvents() {
+            // 开始游戏按钮
+            document.getElementById('start-btn').addEventListener('click', () => {
+                state.started = true;
+                document.getElementById('start-modal').classList.add('hidden');
+                document.getElementById('game-hud').classList.remove('hidden');
+            });
+
+            // 键盘按键监听
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') state.keys.Space = true;
+                if (e.key === 'Shift') state.keys.Shift = true;
+                const k = e.key.toLowerCase();
+                if (k === 'w') state.keys.w = true;
+                if (k === 'a') state.keys.a = true;
+                if (k === 's') state.keys.s = true;
+                if (k === 'd') state.keys.d = true;
+                if (e.key in state.keys) state.keys[e.key] = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') state.keys.Space = false;
+                if (e.key === 'Shift') state.keys.Shift = false;
+                const k = e.key.toLowerCase();
+                if (k === 'w') state.keys.w = false;
+                if (k === 'a') state.keys.a = false;
+                if (k === 's') state.keys.s = false;
+                if (k === 'd') state.keys.d = false;
+                if (e.key in state.keys) state.keys[e.key] = false;
+            });
+
+            // 鼠标/触摸旋转视角
+            const dom = renderer.domElement;
+            dom.addEventListener('mousedown', (e) => {
+                state.camera.isDragging = true;
+                state.camera.lastX = e.clientX;
+                state.camera.lastY = e.clientY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!state.camera.isDragging) return;
+                const dx = e.clientX - state.camera.lastX;
+                const dy = e.clientY - state.camera.lastY;
+                state.camera.lastX = e.clientX;
+                state.camera.lastY = e.clientY;
+
+                state.camera.yaw -= dx * 0.0065;
+                state.camera.pitch = Math.max(-0.25, Math.min(0.85, state.camera.pitch + dy * 0.005));
+            });
+
+            window.addEventListener('mouseup', () => {
+                state.camera.isDragging = false;
+            });
+
+            // 滚轮缩放第三人称视距
+            dom.addEventListener('wheel', (e) => {
+                if (state.cameraMode === 'third') {
+                    state.camera.distance = Math.max(5, Math.min(26, state.camera.distance + e.deltaY * 0.01));
+                }
+            }, { passive: true });
+
+            // 触摸滑动旋转视角（右侧屏幕）
+            let touchLookId = null;
+            dom.addEventListener('touchstart', (e) => {
+                for (let t of e.changedTouches) {
+                    if (touchLookId === null) {
+                        touchLookId = t.identifier;
+                        state.camera.lastX = t.clientX;
+                        state.camera.lastY = t.clientY;
+                    }
+                }
+            }, { passive: true });
+
+            dom.addEventListener('touchmove', (e) => {
+                for (let t of e.changedTouches) {
+                    if (t.identifier === touchLookId) {
+                        const dx = t.clientX - state.camera.lastX;
+                        const dy = t.clientY - state.camera.lastY;
+                        state.camera.lastX = t.clientX;
+                        state.camera.lastY = t.clientY;
+                        state.camera.yaw -= dx * 0.007;
+                        state.camera.pitch = Math.max(-0.2, Math.min(0.8, state.camera.pitch + dy * 0.006));
+                    }
+                }
+            }, { passive: true });
+
+            dom.addEventListener('touchend', (e) => {
+                for (let t of e.changedTouches) {
+                    if (t.identifier === touchLookId) touchLookId = null;
+                }
+            });
+
+            // 虚拟摇杆逻辑
+            const joyZone = document.getElementById('joystick-zone');
+            const joyStick = document.getElementById('joystick-stick');
+            joyZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                state.joystick.active = true;
+                updateJoystick(e.touches[0]);
+            });
+            joyZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (state.joystick.active) updateJoystick(e.touches[0]);
+            });
+            const endJoy = () => {
+                state.joystick.active = false;
+                state.joystick.dx = 0;
+                state.joystick.dy = 0;
+                joyStick.style.transform = 'translate(-50%, -50%)';
+            };
+            joyZone.addEventListener('touchend', endJoy);
+            joyZone.addEventListener('touchcancel', endJoy);
+
+            function updateJoystick(touch) {
+                const rect = joyZone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const maxR = rect.width / 2 - 16;
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                const dist = Math.hypot(dx, dy);
+                if (dist > maxR) {
+                    dx = (dx / dist) * maxR;
+                    dy = (dy / dist) * maxR;
+                }
+                joyStick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                state.joystick.dx = dx / maxR;
+                state.joystick.dy = dy / maxR;
+            }
+
+            // 移动端跳跃与冲刺按钮
+            const mJump = document.getElementById('mobile-jump-btn');
+            mJump.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.Space = true; });
+            mJump.addEventListener('touchend', () => { state.keys.Space = false; });
+
+            const mSprint = document.getElementById('mobile-sprint-btn');
+            mSprint.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.Shift = true; });
+            mSprint.addEventListener('touchend', () => { state.keys.Shift = false; });
+
+            // 时间切换按钮
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', () => applyTimeTheme(btn.dataset.time));
+            });
+
+            // 视角切换按钮
+            document.getElementById('toggle-camera-btn').addEventListener('click', () => {
+                state.cameraMode = state.cameraMode === 'third' ? 'first' : 'third';
+                document.getElementById('camera-mode-text').textContent =
+                    state.cameraMode === 'third' ? '第三人称' : '第一人称';
+            });
+
+            // 快捷传送
+            document.getElementById('teleport-pearl-btn').addEventListener('click', () => {
+                state.player.pos.set(0, 0, 32);
+                state.camera.yaw = 0;
+            });
+            document.getElementById('teleport-bund-btn').addEventListener('click', () => {
+                state.player.pos.set(-58, 0, 12);
+                state.camera.yaw = -Math.PI / 2.4;
+            });
+
+            // 关闭地标卡片
+            document.getElementById('close-landmark-btn').addEventListener('click', hideLandmarkCard);
+
+            // 拍照模式控制
+            document.getElementById('photo-mode-btn').addEventListener('click', () => {
+                state.photoMode = true;
+                document.getElementById('game-hud').classList.add('hidden');
+                document.getElementById('photo-ui').classList.remove('hidden');
+            });
+
+            document.getElementById('exit-photo-btn').addEventListener('click', () => {
+                state.photoMode = false;
+                document.getElementById('photo-ui').classList.add('hidden');
+                document.getElementById('game-hud').classList.remove('hidden');
+            });
+
+            document.getElementById('shutter-btn').addEventListener('click', () => {
+                // 闪光动画
+                const flash = document.getElementById('flash-overlay');
+                flash.style.opacity = '0.85';
+                setTimeout(() => { flash.style.opacity = '0'; }, 120);
+
+                // 渲染当前帧并生成图片
+                renderer.render(scene, camera);
+                const dataUrl = renderer.domElement.toDataURL('image/png');
+                document.getElementById('captured-image').src = dataUrl;
+                document.getElementById('download-photo-link').href = dataUrl;
+
+                const previewModal = document.getElementById('photo-preview-modal');
+                previewModal.classList.remove('hidden');
+                previewModal.classList.add('flex');
+            });
+
+            document.getElementById('close-photo-preview-btn').addEventListener('click', () => {
+                const previewModal = document.getElementById('photo-preview-modal');
+                previewModal.classList.add('hidden');
+                previewModal.classList.remove('flex');
+            });
+
+            // 窗口自适应
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // ==================== 主渲染循环 ====================
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const elapsed = clock.getElapsedTime();
+
+            updatePlayer(dt);
+            updateCamera();
+            updateWorldAnimations(elapsed, dt);
+
+            if (state.started && !state.photoMode) {
+                drawMinimap();
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // 窗口加载完成后启动
+        window.onload = function () {
+            init();
+            animate();
+        };
+    </script>
 </body>
 </html>
