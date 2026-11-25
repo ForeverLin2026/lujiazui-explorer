@@ -10,9 +10,9 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #070b14;
+    background: #142238;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    color: #f4f7fb;
+    color: #f8fafc;
   }
   #canvas-wrap { position: fixed; inset: 0; width: 100%; height: 100%; }
 
@@ -30,12 +30,12 @@
   }
   .panel {
     pointer-events: auto;
-    background: rgba(12, 18, 32, 0.72);
+    background: rgba(20, 32, 56, 0.72);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 10px 28px rgba(8, 15, 30, 0.28);
   }
   .title-card { padding: 12px 16px; }
   .title-card h1 {
@@ -50,12 +50,12 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #fff5cc, #ff7eb6 65%, #7c5cff);
-    box-shadow: 0 0 10px #ff8ec7;
+    background: radial-gradient(circle at 35% 35%, #fff7d6, #ff8ac4 65%, #70a8ff);
+    box-shadow: 0 0 10px #ff9ed0;
   }
   .title-card p {
     font-size: 12px;
-    color: rgba(235, 242, 255, 0.75);
+    color: rgba(244, 248, 255, 0.85);
     margin-top: 4px;
   }
 
@@ -67,9 +67,9 @@
   }
   button.btn {
     pointer-events: auto;
-    background: rgba(255, 255, 255, 0.08);
-    color: #f4f7fb;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 10px;
     padding: 7px 12px;
     font-size: 12px;
@@ -77,10 +77,10 @@
     cursor: pointer;
     transition: all 0.18s ease;
   }
-  button.btn:hover { background: rgba(255, 255, 255, 0.16); transform: translateY(-1px); }
+  button.btn:hover { background: rgba(255, 255, 255, 0.22); transform: translateY(-1px); }
   button.btn.active {
-    background: linear-gradient(135deg, rgba(255, 118, 177, 0.32), rgba(112, 161, 255, 0.32));
-    border-color: rgba(255, 175, 214, 0.65);
+    background: linear-gradient(135deg, rgba(255, 138, 192, 0.42), rgba(118, 178, 255, 0.42));
+    border-color: rgba(255, 200, 226, 0.8);
   }
 
   .minimap-card {
@@ -95,7 +95,7 @@
     display: flex;
     justify-content: space-between;
     font-size: 11px;
-    color: rgba(235, 242, 255, 0.78);
+    color: rgba(244, 248, 255, 0.86);
     margin-bottom: 6px;
   }
   #minimap {
@@ -103,8 +103,8 @@
     height: 146px;
     border-radius: 10px;
     display: block;
-    background: rgba(7, 13, 25, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(16, 28, 50, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.16);
   }
 
   .bottom-right {
@@ -128,23 +128,23 @@
     font-size: 11px;
     padding: 2px 8px;
     border-radius: 999px;
-    background: rgba(255, 138, 192, 0.2);
-    color: #ffc2de;
-    border: 1px solid rgba(255, 138, 192, 0.4);
+    background: rgba(255, 158, 206, 0.28);
+    color: #ffe0ef;
+    border: 1px solid rgba(255, 178, 216, 0.55);
     margin-bottom: 6px;
   }
   .landmark-card h2 { font-size: 15px; margin-bottom: 5px; }
-  .landmark-card p { font-size: 12px; line-height: 1.55; color: rgba(235, 242, 255, 0.82); }
+  .landmark-card p { font-size: 12px; line-height: 1.55; color: rgba(244, 248, 255, 0.88); }
 
   .help-card {
     padding: 10px 14px;
     font-size: 12px;
-    color: rgba(235, 242, 255, 0.8);
+    color: rgba(244, 248, 255, 0.86);
     line-height: 1.6;
   }
   .help-card kbd {
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.28);
     border-radius: 5px;
     padding: 1px 5px;
     font-size: 11px;
@@ -158,8 +158,8 @@
     transform: translateX(-50%) translateY(-10px);
     padding: 9px 18px;
     border-radius: 999px;
-    background: rgba(18, 28, 48, 0.88);
-    border: 1px solid rgba(255, 182, 219, 0.55);
+    background: rgba(24, 40, 68, 0.92);
+    border: 1px solid rgba(255, 196, 226, 0.7);
     color: #fff;
     font-size: 13px;
     font-weight: 600;
@@ -167,14 +167,14 @@
     pointer-events: none;
     transition: all 0.25s ease;
     z-index: 20;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 24px rgba(10, 18, 36, 0.35);
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(4, 7, 15, 0.72);
+    background: rgba(12, 20, 38, 0.68);
     backdrop-filter: blur(6px);
     display: none;
     align-items: center;
@@ -193,7 +193,7 @@
     width: 100%;
     border-radius: 10px;
     display: block;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   .modal-footer {
     display: flex;
@@ -209,7 +209,7 @@
 
 <div class="hud-top">
   <div class="panel title-card">
-    <h1><span class="pearl-dot"></span>漫步陆家嘴 · 东方明珠 3D 探索</h1>
+    <h1><span class="pearl-dot"></span>漫步陆家嘴 · 东方明珠 3D 城市探索</h1>
     <p id="status-line">已打卡地标：<span id="visited-count">0</span> / 7 · 能量球：<span id="orb-count">0</span> / 8 · 探索值：<span id="score-val">0</span></p>
   </div>
 
@@ -248,7 +248,7 @@
   <div class="panel modal-box">
     <img id="photo-preview" alt="陆家嘴打卡明信片" />
     <div class="modal-footer">
-      <span style="font-size:12px;opacity:0.8;">已生成陆家嘴城市探索明信片</span>
+      <span style="font-size:12px;opacity:0.85;">已生成陆家嘴城市探索明信片</span>
       <div style="display:flex;gap:8px;">
         <a id="photo-download" download="lujiazui-postcard.png" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;">下载明信片</a>
         <button class="btn" id="photo-close">关闭</button>
@@ -278,16 +278,16 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.28;
 container.appendChild(renderer.domElement);
 
-// 天空穹顶着色器
+// 天空穹顶着色器（明亮清透的蓝紫夜空渐变）
 const skyUniforms = {
-  topColor: { value: new THREE.Color(0x070d1f) },
-  midColor: { value: new THREE.Color(0x162447) },
-  bottomColor: { value: new THREE.Color(0x281c3d) },
+  topColor: { value: new THREE.Color(0x162b54) },
+  midColor: { value: new THREE.Color(0x2e5288) },
+  bottomColor: { value: new THREE.Color(0x5b4a78) },
   sunDir: { value: new THREE.Vector3(-0.5, 0.35, -0.7).normalize() },
-  sunColor: { value: new THREE.Color(0xff9ec4) }
+  sunColor: { value: new THREE.Color(0xffb5d8) }
 };
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
@@ -314,7 +314,7 @@ const skyMat = new THREE.ShaderMaterial({
       vec3 col = mix(bottomColor, midColor, smoothstep(0.0, 0.28, h));
       col = mix(col, topColor, smoothstep(0.28, 0.9, h));
       float sunAmt = max(dot(dir, sunDir), 0.0);
-      col += sunColor * pow(sunAmt, 24.0) * 0.45;
+      col += sunColor * pow(sunAmt, 20.0) * 0.5;
       gl_FragColor = vec4(col, 1.0);
     }
   `
@@ -322,14 +322,14 @@ const skyMat = new THREE.ShaderMaterial({
 const skyDome = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 24), skyMat);
 scene.add(skyDome);
 
-const fog = new THREE.FogExp2(0x101930, 0.0024);
+const fog = new THREE.FogExp2(0x283e63, 0.0017);
 scene.fog = fog;
 
-// 光源系统
-const hemiLight = new THREE.HemisphereLight(0x9bb8ff, 0x2b2540, 0.9);
+// 光源系统（增强环境漫反射与主方向光亮度）
+const hemiLight = new THREE.HemisphereLight(0xc4dcff, 0x565278, 1.45);
 scene.add(hemiLight);
 
-const dirLight = new THREE.DirectionalLight(0xffd7ba, 1.8);
+const dirLight = new THREE.DirectionalLight(0xffe6cc, 2.35);
 dirLight.position.set(-70, 95, -60);
 dirLight.castShadow = true;
 dirLight.shadow.mapSize.set(2048, 2048);
@@ -342,15 +342,19 @@ dirLight.shadow.camera.top = d;
 dirLight.shadow.camera.bottom = -d;
 scene.add(dirLight);
 
+const fillLight = new THREE.DirectionalLight(0x9ec5ff, 0.85);
+fillLight.position.set(65, 50, 60);
+scene.add(fillLight);
+
 // 地面、广场、道路与黄浦江
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x202738, roughness: 0.85, metalness: 0.1 });
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x3b4761, roughness: 0.78, metalness: 0.1 });
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(520, 520), groundMat);
 ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
 // 东方明珠中央广场
-const plazaMat = new THREE.MeshStandardMaterial({ color: 0x394359, roughness: 0.65, metalness: 0.2 });
+const plazaMat = new THREE.MeshStandardMaterial({ color: 0x5b6b8c, roughness: 0.58, metalness: 0.18 });
 const plaza = new THREE.Mesh(new THREE.CircleGeometry(36, 48), plazaMat);
 plaza.rotation.x = -Math.PI / 2;
 plaza.position.set(0, 0.03, 0);
@@ -358,14 +362,14 @@ plaza.receiveShadow = true;
 scene.add(plaza);
 
 // 广场同心装饰环
-const ringMat = new THREE.MeshBasicMaterial({ color: 0xff85c0 });
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xff94c8 });
 const plazaRing = new THREE.Mesh(new THREE.RingGeometry(16.5, 17.2, 64), ringMat);
 plazaRing.rotation.x = -Math.PI / 2;
 plazaRing.position.set(0, 0.05, 0);
 scene.add(plazaRing);
 
 // 街道与人行横道
-const roadMat = new THREE.MeshStandardMaterial({ color: 0x171c28, roughness: 0.9 });
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x2c364d, roughness: 0.82 });
 function addRoad(x, z, w, l) {
   const r = new THREE.Mesh(new THREE.PlaneGeometry(w, l), roadMat);
   r.rotation.x = -Math.PI / 2;
@@ -379,7 +383,7 @@ addRoad(-54, 0, 44, 15);  // 丰和路/陆家嘴西路方向
 addRoad(54, 0, 44, 15);   // 银城中路方向
 
 // 斑马线
-const stripeMat = new THREE.MeshBasicMaterial({ color: 0xe6edf8 });
+const stripeMat = new THREE.MeshBasicMaterial({ color: 0xf4f8ff });
 for (let i = -5; i <= 5; i += 2) {
   const s = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 3.6), stripeMat);
   s.rotation.x = -Math.PI / 2;
@@ -389,9 +393,9 @@ for (let i = -5; i <= 5; i += 2) {
 
 // 西侧黄浦江与对岸外滩剪影
 const riverMat = new THREE.MeshStandardMaterial({
-  color: 0x0b2545,
-  roughness: 0.22,
-  metalness: 0.78
+  color: 0x1c5d99,
+  roughness: 0.24,
+  metalness: 0.65
 });
 const river = new THREE.Mesh(new THREE.PlaneGeometry(130, 520), riverMat);
 river.rotation.x = -Math.PI / 2;
@@ -402,12 +406,12 @@ scene.add(river);
 const cruiseShip = new THREE.Group();
 const hullMesh = new THREE.Mesh(
   new THREE.BoxGeometry(6.5, 2.2, 22),
-  new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.35, metalness: 0.3 })
+  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.32, metalness: 0.25 })
 );
 hullMesh.position.y = 1.1;
 const cabinMesh = new THREE.Mesh(
   new THREE.BoxGeometry(5.2, 1.8, 15),
-  new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0ea5e9, emissiveIntensity: 0.35 })
+  new THREE.MeshStandardMaterial({ color: 0x67d4ff, emissive: 0x38bdf8, emissiveIntensity: 0.45 })
 );
 cabinMesh.position.y = 2.9;
 cruiseShip.add(hullMesh, cabinMesh);
@@ -415,7 +419,7 @@ cruiseShip.position.set(-132, 0.1, 0);
 scene.add(cruiseShip);
 
 // 外滩历史建筑剪影（江对岸）
-const bundMat = new THREE.MeshStandardMaterial({ color: 0x2c3244, roughness: 0.75 });
+const bundMat = new THREE.MeshStandardMaterial({ color: 0x556280, roughness: 0.68 });
 for (let z = -150; z <= 150; z += 26) {
   const h = 18 + ((Math.abs(z) * 7) % 14);
   const b = new THREE.Mesh(new THREE.BoxGeometry(22, h, 18), bundMat);
@@ -427,17 +431,17 @@ for (let z = -150; z <= 150; z += 26) {
 const pearlTower = new THREE.Group();
 scene.add(pearlTower);
 
-const towerSteelMat = new THREE.MeshStandardMaterial({ color: 0xd8dee9, metalness: 0.75, roughness: 0.28 });
-const darkAccentMat = new THREE.MeshStandardMaterial({ color: 0x3b4252, metalness: 0.6, roughness: 0.4 });
+const towerSteelMat = new THREE.MeshStandardMaterial({ color: 0xeef3fb, metalness: 0.65, roughness: 0.28 });
+const darkAccentMat = new THREE.MeshStandardMaterial({ color: 0x5c6882, metalness: 0.55, roughness: 0.38 });
 const pearlSphereMat = new THREE.MeshStandardMaterial({
-  color: 0xffb3d9,
-  emissive: 0xff4fa3,
-  emissiveIntensity: 0.55,
-  roughness: 0.25,
-  metalness: 0.35
+  color: 0xffc6e3,
+  emissive: 0xff66b2,
+  emissiveIntensity: 0.72,
+  roughness: 0.22,
+  metalness: 0.3
 });
-const neonRingMat = new THREE.MeshBasicMaterial({ color: 0x66e3ff });
-const lowerNeonMat = new THREE.MeshBasicMaterial({ color: 0xff7eb6 });
+const neonRingMat = new THREE.MeshBasicMaterial({ color: 0x80ecff });
+const lowerNeonMat = new THREE.MeshBasicMaterial({ color: 0xff94c8 });
 
 // 基座与三根斜撑巨柱
 const basePedestal = new THREE.Mesh(new THREE.CylinderGeometry(11.5, 14, 4.5, 24), darkAccentMat);
@@ -506,16 +510,16 @@ const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.85, 28, 16), tow
 spire.position.y = 104;
 pearlTower.add(spire);
 
-const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff4d6d });
+const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff6b8b });
 const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 12), beaconMat);
 beacon.position.y = 118.5;
 pearlTower.add(beacon);
 
 // ==================== 陆家嘴“三件套”与城市建筑群 ====================
-const glassMatA = new THREE.MeshStandardMaterial({ color: 0x6ea8fe, metalness: 0.82, roughness: 0.18 });
-const glassMatB = new THREE.MeshStandardMaterial({ color: 0x8093b8, metalness: 0.78, roughness: 0.22 });
-const buildingMat = new THREE.MeshStandardMaterial({ color: 0x28344f, metalness: 0.45, roughness: 0.55 });
-const windowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffd27d });
+const glassMatA = new THREE.MeshStandardMaterial({ color: 0x8ec2ff, metalness: 0.72, roughness: 0.2 });
+const glassMatB = new THREE.MeshStandardMaterial({ color: 0xa4b8de, metalness: 0.68, roughness: 0.24 });
+const buildingMat = new THREE.MeshStandardMaterial({ color: 0x4b5d82, metalness: 0.42, roughness: 0.5 });
+const windowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffe299 });
 
 // 上海中心大厦（螺旋造型）
 const shanghaiTower = new THREE.Group();
@@ -600,8 +604,8 @@ const blockCoords = [
 blockCoords.forEach(([x, z, w, d, h]) => addCityBlock(x, z, w, d, h));
 
 // 行道树
-const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
-const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.8 });
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7a5642, roughness: 0.85 });
+const foliageMat = new THREE.MeshStandardMaterial({ color: 0x439970, roughness: 0.75 });
 const treePositions = [
   [-12, 22], [12, 22], [-12, -22], [12, -22],
   [-22, 11], [-22, -11], [22, 11], [22, -11],
@@ -686,9 +690,9 @@ const beaconMeshes = [];
 
 landmarks.forEach((lm) => {
   const beamMat = new THREE.MeshBasicMaterial({
-    color: 0x7ef9ff,
+    color: 0x8ffaff,
     transparent: true,
-    opacity: 0.24,
+    opacity: 0.28,
     side: THREE.DoubleSide,
     depthWrite: false
   });
@@ -698,7 +702,7 @@ landmarks.forEach((lm) => {
 
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(1.8, 2.25, 32),
-    new THREE.MeshBasicMaterial({ color: 0xff99cc, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({ color: 0xffa8d4, side: THREE.DoubleSide })
   );
   ring.rotation.x = -Math.PI / 2;
   ring.position.set(lm.x, 0.06, lm.z);
@@ -713,11 +717,11 @@ const orbCoords = [
   [-44, 6], [42, 4], [8, 40], [-8, -36]
 ];
 const orbMat = new THREE.MeshStandardMaterial({
-  color: 0xffd166,
-  emissive: 0xff9f1c,
-  emissiveIntensity: 0.75,
+  color: 0xffe082,
+  emissive: 0xffb32c,
+  emissiveIntensity: 0.85,
   roughness: 0.2,
-  metalness: 0.4
+  metalness: 0.35
 });
 const energyOrbs = orbCoords.map(([ox, oz], idx) => {
   const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.75, 1), orbMat);
@@ -732,13 +736,13 @@ const player = new THREE.Group();
 player.position.set(0, 0, 46);
 scene.add(player);
 
-const skinMat = new THREE.MeshStandardMaterial({ color: 0xf0c29b, roughness: 0.58, metalness: 0.02 });
-const hairMat = new THREE.MeshStandardMaterial({ color: 0x242938, roughness: 0.75, metalness: 0.05 });
-const jacketMat = new THREE.MeshStandardMaterial({ color: 0x3b6ea5, roughness: 0.55, metalness: 0.08 });
-const jacketTrimMat = new THREE.MeshStandardMaterial({ color: 0x254469, roughness: 0.6, metalness: 0.1 });
-const pantsMat = new THREE.MeshStandardMaterial({ color: 0x273043, roughness: 0.72, metalness: 0.05 });
-const shoeMat = new THREE.MeshStandardMaterial({ color: 0xd9dee7, roughness: 0.45, metalness: 0.15 });
-const shoeSoleMat = new THREE.MeshStandardMaterial({ color: 0x1b202c, roughness: 0.85, metalness: 0.05 });
+const skinMat = new THREE.MeshStandardMaterial({ color: 0xf5caa6, roughness: 0.52, metalness: 0.02 });
+const hairMat = new THREE.MeshStandardMaterial({ color: 0x2e364a, roughness: 0.68, metalness: 0.05 });
+const jacketMat = new THREE.MeshStandardMaterial({ color: 0x4b87c9, roughness: 0.48, metalness: 0.08 });
+const jacketTrimMat = new THREE.MeshStandardMaterial({ color: 0x2d588a, roughness: 0.55, metalness: 0.1 });
+const pantsMat = new THREE.MeshStandardMaterial({ color: 0x394763, roughness: 0.65, metalness: 0.05 });
+const shoeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.4, metalness: 0.12 });
+const shoeSoleMat = new THREE.MeshStandardMaterial({ color: 0x2a3244, roughness: 0.8, metalness: 0.05 });
 
 const characterRig = new THREE.Group();
 player.add(characterRig);
@@ -910,22 +914,22 @@ let velY = 0;
 let isGrounded = true;
 let walkCycle = 0;
 
-// 氛围切换
+// 氛围切换（整体调亮）
 const modes = {
   night: {
-    top: 0x060b1a, mid: 0x152242, bottom: 0x2b193d,
-    sunColor: 0xff8ec7, fog: 0x0e162b, hemi: 0.85, dir: 1.5,
-    sphereEmissive: 0.65, windowIntensity: 1.0
+    top: 0x162b54, mid: 0x2e5288, bottom: 0x5b4a78,
+    sunColor: 0xffb5d8, fog: 0x283e63, hemi: 1.45, dir: 2.35,
+    sphereEmissive: 0.72
   },
   sunset: {
-    top: 0x1b264f, mid: 0x9b4d6b, bottom: 0xff9e6d,
-    sunColor: 0xffb36b, fog: 0x4b384c, hemi: 1.15, dir: 2.2,
-    sphereEmissive: 0.35, windowIntensity: 0.75
+    top: 0x2b417a, mid: 0xc2698c, bottom: 0xffb585,
+    sunColor: 0xffca8a, fog: 0x6e546b, hemi: 1.55, dir: 2.65,
+    sphereEmissive: 0.45
   },
   day: {
-    top: 0x2b7de9, mid: 0x7cc4ff, bottom: 0xdcf1ff,
-    sunColor: 0xfff4d6, fog: 0x9fd2f7, hemi: 1.55, dir: 2.5,
-    sphereEmissive: 0.12, windowIntensity: 0.25
+    top: 0x3b8ff5, mid: 0x8fd0ff, bottom: 0xe8f6ff,
+    sunColor: 0xfff8e0, fog: 0xb6defa, hemi: 1.85, dir: 2.85,
+    sphereEmissive: 0.18
   }
 };
 
@@ -988,7 +992,7 @@ document.getElementById('photo-btn').addEventListener('click', () => {
   ctx.drawImage(srcCanvas, 0, 0);
 
   const barH = Math.max(54, Math.round(outCanvas.height * 0.08));
-  ctx.fillStyle = 'rgba(10, 16, 30, 0.72)';
+  ctx.fillStyle = 'rgba(18, 30, 52, 0.72)';
   ctx.fillRect(0, outCanvas.height - barH, outCanvas.width, barH);
   ctx.fillStyle = '#ffffff';
   ctx.font = `600 ${Math.max(16, Math.round(barH * 0.36))}px sans-serif`;
@@ -1017,10 +1021,10 @@ function drawMinimap() {
 
   mCtx.clearRect(0, 0, w, h);
 
-  mCtx.fillStyle = 'rgba(24, 92, 168, 0.45)';
+  mCtx.fillStyle = 'rgba(42, 125, 208, 0.52)';
   mCtx.fillRect(0, 0, cx + (-80) * scale, h);
 
-  mCtx.fillStyle = '#ff7eb6';
+  mCtx.fillStyle = '#ff94c8';
   mCtx.beginPath();
   mCtx.arc(cx, cz, 5, 0, Math.PI * 2);
   mCtx.fill();
@@ -1028,7 +1032,7 @@ function drawMinimap() {
   landmarks.forEach((lm) => {
     const px = cx + lm.x * scale;
     const pz = cz + lm.z * scale;
-    mCtx.fillStyle = visitedSet.has(lm.id) ? '#6ef7b7' : '#7ef9ff';
+    mCtx.fillStyle = visitedSet.has(lm.id) ? '#6ef7b7' : '#8ffaff';
     mCtx.beginPath();
     mCtx.arc(px, pz, 3.2, 0, Math.PI * 2);
     mCtx.fill();
@@ -1038,7 +1042,7 @@ function drawMinimap() {
     if (orb.collected) return;
     const ox = cx + orb.x * scale;
     const oz = cz + orb.z * scale;
-    mCtx.fillStyle = '#ffd166';
+    mCtx.fillStyle = '#ffe082';
     mCtx.beginPath();
     mCtx.arc(ox, oz, 2.2, 0, Math.PI * 2);
     mCtx.fill();
@@ -1049,7 +1053,7 @@ function drawMinimap() {
   mCtx.save();
   mCtx.translate(ux, uz);
   mCtx.rotate(-yaw);
-  mCtx.fillStyle = '#ffd166';
+  mCtx.fillStyle = '#ffe082';
   mCtx.beginPath();
   mCtx.moveTo(0, -6);
   mCtx.lineTo(4.5, 5);
