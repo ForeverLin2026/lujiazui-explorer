@@ -1460,74 +1460,44 @@
         // ==================== 高品质 GLB 展示车辆 ====================
         // 模型由 vinish.dev 提供，CC BY 4.0；署名见 README。
         function loadRealisticShowcaseCars() {
+            const showcaseCars = [
+                { name: 'Executive Sedan', url: 'https://models.vinish.dev/realistic-cars/executive-sedan.glb', angle: 0.35, angularSpeed: 0.30, color: 0x172554, model: 'model3' },
+                { name: 'Luxury SUV', url: 'https://models.vinish.dev/realistic-cars/luxury-suv.glb', angle: Math.PI + 0.35, angularSpeed: -0.27, color: 0x991b1b, model: 'modely' }
+            ];
+            const addFallbackCar = config => {
+                const built = createTeslaCar(config.color, config.model);
+                built.car.name = config.name + ' (fallback)';
+                scene.add(built.car);
+                cityCars.push({ mesh: built.car, wheels: built.wheels, path: 'pearl-ring', radius: 42, angle: config.angle, angularSpeed: config.angularSpeed, longAxisIsX: true, groundOffset: 0.04 });
+            };
             if (!THREE.GLTFLoader) {
-                console.warn('GLTFLoader 未加载，跳过高品质展示车辆');
+                showcaseCars.forEach(addFallbackCar);
                 return;
             }
-
             const loader = new THREE.GLTFLoader();
-            const showcaseCars = [
-                {
-                    name: 'Executive Sedan',
-                    url: 'https://models.vinish.dev/realistic-cars/executive-sedan.glb',
-                    laneX: -45.5,
-                    startZ: -105,
-                    speed: 13
-                },
-                {
-                    name: 'Luxury SUV',
-                    url: 'https://models.vinish.dev/realistic-cars/luxury-suv.glb',
-                    laneX: -38.5,
-                    startZ: 105,
-                    speed: -12
-                }
-            ];
-
             showcaseCars.forEach(config => {
-                loader.load(
-                    config.url,
-                    gltf => {
-                        const vehicle = gltf.scene;
-                        vehicle.name = config.name;
-
-                        // 统一车辆长度到约 4.8 米，并依据模型长轴自动校正行驶方向。
-                        const bounds = new THREE.Box3().setFromObject(vehicle);
-                        const size = bounds.getSize(new THREE.Vector3());
-                        const longAxisIsX = size.x >= size.z;
-                        const modelLength = Math.max(size.x, size.z);
-                        if (modelLength > 0) vehicle.scale.setScalar(4.8 / modelLength);
-
-                        vehicle.rotation.y = (longAxisIsX ? Math.PI / 2 : 0) + (config.speed < 0 ? Math.PI : 0);
-                        const scaledBounds = new THREE.Box3().setFromObject(vehicle);
-                        vehicle.position.set(config.laneX, -scaledBounds.min.y, config.startZ);
-
-                        vehicle.traverse(node => {
-                            if (node.isMesh) {
-                                node.castShadow = true;
-                                node.receiveShadow = true;
-                                if (node.material) {
-                                    const materials = Array.isArray(node.material) ? node.material : [node.material];
-                                    materials.forEach(material => {
-                                        if ('envMapIntensity' in material) material.envMapIntensity = 0.8;
-                                    });
-                                }
-                            }
-                        });
-
-                        scene.add(vehicle);
-                        // 滨江大道：沿江南北向道路双向行驶。
-                        cityCars.push({
-                            mesh: vehicle,
-                            axis: 'z',
-                            speed: config.speed,
-                            min: -132,
-                            max: 132
-                        });
-                        console.info(config.name + ' 已加入滨江大道车流');
-                    },
-                    undefined,
-                    error => console.error(config.name + ' 加载失败：', error)
-                );
+                loader.load(config.url, gltf => {
+                    const vehicle = gltf.scene;
+                    vehicle.name = config.name;
+                    const bounds = new THREE.Box3().setFromObject(vehicle);
+                    const size = bounds.getSize(new THREE.Vector3());
+                    const longAxisIsX = size.x >= size.z;
+                    const length = Math.max(size.x, size.z);
+                    if (length > 0) vehicle.scale.setScalar(4.8 / length);
+                    vehicle.traverse(node => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                    });
+                    const scaledBounds = new THREE.Box3().setFromObject(vehicle);
+                    scene.add(vehicle);
+                    cityCars.push({ mesh: vehicle, path: 'pearl-ring', radius: 42, angle: config.angle, angularSpeed: config.angularSpeed, longAxisIsX, groundOffset: -scaledBounds.min.y });
+                    console.info(config.name + ' 已加载并加入东方明珠环形道路');
+                }, undefined, error => {
+                    console.error(config.name + ' GLB 加载失败，启用内置车辆', error);
+                    addFallbackCar(config);
+                });
             });
         }
 
@@ -2416,13 +2386,15 @@
             });
 
             cityCars.forEach(car => {
-                const absSpeed = Math.abs(car.speed);
-                if (car.wheels) {
-                    car.wheels.forEach(w => {
-                        w.rotation.z -= (absSpeed / 0.38) * dt;
-                    });
+                if (car.path === 'pearl-ring') {
+                    car.angle += car.angularSpeed * dt;
+                    car.mesh.position.set(Math.cos(car.angle) * car.radius, car.groundOffset, Math.sin(car.angle) * car.radius);
+                    car.mesh.rotation.y = car.longAxisIsX ? car.angle - Math.PI / 2 : -car.angle;
+                    if (car.wheels) car.wheels.forEach(w => { w.rotation.z -= (Math.abs(car.angularSpeed) * car.radius / 0.38) * dt; });
+                    return;
                 }
-
+                const absSpeed = Math.abs(car.speed);
+                if (car.wheels) car.wheels.forEach(w => { w.rotation.z -= (absSpeed / 0.38) * dt; });
                 if (car.axis === 'x') {
                     car.mesh.position.x += car.speed * dt;
                     if (car.mesh.position.x > car.max) car.mesh.position.x = car.min;
@@ -2433,7 +2405,6 @@
                     if (car.mesh.position.z < car.min) car.mesh.position.z = car.max;
                 }
             });
-
             fountainWaterRings.forEach(fr => {
                 const cycle = (elapsed * 0.9 + fr.phase) % 2;
                 fr.mesh.position.y = 1.0 + cycle * 1.25;
