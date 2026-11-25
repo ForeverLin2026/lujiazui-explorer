@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>漫步陆家嘴 - 东方明珠城市探索</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
         
@@ -2201,7 +2201,7 @@
                     riverMat.bumpScale = 0.15;
                 }
             } else if (mode === 'day') {
-                scene.background = new THREE.Color(0x9bc8e6);
+                scene.background = daylightEnvironment || new THREE.Color(0x9bc8e6);
                 scene.fog.color.setHex(0xc5dce8);
                 scene.fog.density = 0.00105;
                 ambientLight.color.setHex(0xdce8ef);
