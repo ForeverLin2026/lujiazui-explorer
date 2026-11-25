@@ -183,7 +183,7 @@
                     <div class="text-[11px] text-slate-400 uppercase tracking-wider">探索打卡点</div>
                     <div class="text-base sm:text-lg font-bold text-pink-400 flex items-center gap-1.5">
                         <span>📍</span>
-                        <span id="landmark-counter">0 / 5</span>
+                        <span id="landmark-counter">0 / 7</span>
                     </div>
                 </div>
                 <div class="h-7 w-px bg-slate-700"></div>
@@ -259,6 +259,12 @@
             <button id="teleport-bund-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-cyan-300 transition cursor-pointer">
                 🌊 漫步滨江大道
             </button>
+            <button id="teleport-park-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-emerald-300 transition cursor-pointer">
+                🌿 中心绿地花园
+            </button>
+            <button id="teleport-ferry-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-amber-300 transition cursor-pointer">
+                ⛴️ 东昌路渡口
+            </button>
         </div>
 
         <!-- 移动端/触屏虚拟摇杆与跳跃按钮 -->
@@ -310,6 +316,7 @@
         /**
          * 漫步陆家嘴 - 3D 城市探索游戏核心逻辑
          * 包含：Three.js 场景搭建、东方明珠程序化建模、陆家嘴天际线、黄浦江波纹与游船、
+         * 陆家嘴中心绿地喷泉花坛、东昌路轮渡码头与长椅凉亭、城市穿梭车辆、
          * 真实比例与关节角色动画、第一/第三人称相机控制、碰撞检测、地标打卡与小地图雷达。
          */
 
@@ -357,10 +364,11 @@
         let playerGroup, bodyRig, leftLegPivot, rightLegPivot, leftArmPivot, rightArmPivot, headGroup;
         let riverMesh, riverBasePositions, riverBumpTex, riverMat;
         let boats = [], streetLampBulbs = [], buildingWindowMats = [];
-        let colliders = []; // 建筑物AABB碰撞箱
+        let cityCars = [], fountainWaterRings = [];
+        let colliders = []; // 建筑物与障碍物 AABB 碰撞箱
         let checkpointMeshes = [];
 
-        // 打卡地标数据
+        // 打卡地标数据（扩充至 7 个陆家嘴经典点位，保持原有结构与风格）
         const LANDMARKS = [
             {
                 id: 'pearl_plaza',
@@ -401,6 +409,22 @@
                 radius: 8,
                 points: 150,
                 desc: '连接陆家嘴各大金融中心与地铁站的环形空中连廊，也是摄影师拍摄东方明珠与车水马龙同框的绝佳机位。'
+            },
+            {
+                id: 'central_green_fountain',
+                name: '陆家嘴中心绿地喷泉广场',
+                pos: new THREE.Vector3(16, 0, -42),
+                radius: 9,
+                points: 200,
+                desc: '高楼环抱中的城市绿肺，水池喷泉与花坛步道相映成趣，为快节奏的金融商务区增添了一片宁静舒展的休憩空间。'
+            },
+            {
+                id: 'dongchang_ferry_pier',
+                name: '东昌路轮渡码头',
+                pos: new THREE.Vector3(-60, 0, -54),
+                radius: 9,
+                points: 200,
+                desc: '连接黄浦江两岸的经典渡口，候船长椅与亲水凉亭静候江风，延续着老上海摆渡过江的城市记忆与烟火气。'
             }
         ];
 
@@ -431,7 +455,9 @@
             buildGroundAndRiver();
             buildOrientalPearlTower();
             buildLujiazuiSkyline();
+            buildCentralGreenParkAndPier();
             buildStreetProps();
+            buildCityTraffic();
             buildCheckpoints();
             buildPlayerCharacter();
 
@@ -740,6 +766,149 @@
             }
         }
 
+        // ==================== 新增场景：中心绿地喷泉花坛 & 东昌路轮渡码头凉亭长椅 ====================
+        function buildCentralGreenParkAndPier() {
+            // 1. 陆家嘴中心绿地喷泉广场 (x: 16, z: -42)
+            const parkGroup = new THREE.Group();
+            parkGroup.position.set(16, 0, -42);
+
+            const lawnPad = new THREE.Mesh(
+                new THREE.CylinderGeometry(13.5, 14, 0.16, 36),
+                new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.85 })
+            );
+            lawnPad.position.y = 0.08;
+            lawnPad.receiveShadow = true;
+            parkGroup.add(lawnPad);
+
+            const fountainRim = new THREE.Mesh(
+                new THREE.TorusGeometry(4.2, 0.36, 12, 32),
+                new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.4, metalness: 0.3 })
+            );
+            fountainRim.rotation.x = Math.PI / 2;
+            fountainRim.position.y = 0.42;
+            fountainRim.castShadow = true;
+            parkGroup.add(fountainRim);
+
+            const fountainPool = new THREE.Mesh(
+                new THREE.CircleGeometry(4.0, 32),
+                new THREE.MeshStandardMaterial({
+                    color: 0x0ea5e9,
+                    emissive: 0x0284c7,
+                    emissiveIntensity: 0.35,
+                    roughness: 0.12,
+                    metalness: 0.8
+                })
+            );
+            fountainPool.rotation.x = -Math.PI / 2;
+            fountainPool.position.y = 0.25;
+            parkGroup.add(fountainPool);
+
+            const nozzle = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.35, 0.55, 1.4, 14),
+                new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.6 })
+            );
+            nozzle.position.y = 0.85;
+            parkGroup.add(nozzle);
+
+            // 喷泉水环动画组
+            for (let r = 0; r < 2; r++) {
+                const sprayRing = new THREE.Mesh(
+                    new THREE.TorusGeometry(1.1 + r * 0.9, 0.09, 8, 24),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x7dd3fc,
+                        transparent: true,
+                        opacity: 0.55
+                    })
+                );
+                sprayRing.rotation.x = Math.PI / 2;
+                sprayRing.position.y = 1.6 + r * 0.8;
+                parkGroup.add(sprayRing);
+                fountainWaterRings.push({ mesh: sprayRing, baseY: 1.6 + r * 0.8, phase: r * 1.5 });
+            }
+
+            // 环绕花坛与长椅
+            const flowerColors = [0xf472b6, 0xfbbf24, 0x38bdf8, 0xc084fc];
+            for (let i = 0; i < 6; i++) {
+                const a = (i * Math.PI * 2) / 6;
+                const fx = Math.cos(a) * 8.2;
+                const fz = Math.sin(a) * 8.2;
+
+                const planter = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.2, 0.45, 1.2),
+                    new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 })
+                );
+                planter.position.set(fx, 0.22, fz);
+                planter.rotation.y = -a;
+                parkGroup.add(planter);
+
+                const bloom = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.55, 10, 10),
+                    new THREE.MeshBasicMaterial({ color: flowerColors[i % flowerColors.length] })
+                );
+                bloom.scale.set(1.5, 0.55, 0.9);
+                bloom.position.set(fx, 0.52, fz);
+                bloom.rotation.y = -a;
+                parkGroup.add(bloom);
+            }
+
+            colliders.push({ minX: 11.5, maxX: 20.5, minZ: -46.5, maxZ: -37.5 });
+            scene.add(parkGroup);
+
+            // 2. 东昌路轮渡码头凉亭与观景长椅 (x: -60, z: -54)
+            const pierGroup = new THREE.Group();
+            pierGroup.position.set(-60, 0, -54);
+
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.5 });
+            const trimCyanMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+
+            // 观景凉亭
+            const postCoords = [[-2.4, -2.4], [2.4, -2.4], [-2.4, 2.4], [2.4, 2.4]];
+            postCoords.forEach(([px, pz]) => {
+                const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 3.6, 10), woodMat);
+                post.position.set(px, 1.8, pz);
+                post.castShadow = true;
+                pierGroup.add(post);
+            });
+
+            const pavilionRoof = new THREE.Mesh(new THREE.ConeGeometry(4.4, 1.7, 4), roofMat);
+            pavilionRoof.rotation.y = Math.PI / 4;
+            pavilionRoof.position.y = 4.35;
+            pavilionRoof.castShadow = true;
+            pierGroup.add(pavilionRoof);
+
+            const roofAccent = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.08, 8, 28), trimCyanMat);
+            roofAccent.rotation.x = Math.PI / 2;
+            roofAccent.position.y = 3.55;
+            pierGroup.add(roofAccent);
+
+            // 码头候船长椅
+            [-4.8, 4.8].forEach(bz => {
+                const benchGroup = new THREE.Group();
+                benchGroup.position.set(0, 0, bz);
+
+                const seat = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.14, 3.2), woodMat);
+                seat.position.y = 0.65;
+                seat.castShadow = true;
+                benchGroup.add(seat);
+
+                const back = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.65, 3.2), woodMat);
+                back.position.set(0.48, 1.02, 0);
+                benchGroup.add(back);
+
+                [-1.2, 1.2].forEach(lz => {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.62, 0.14), roofMat);
+                    leg.position.set(0, 0.31, lz);
+                    benchGroup.add(leg);
+                });
+
+                pierGroup.add(benchGroup);
+            });
+
+            colliders.push({ minX: -62.6, maxX: -57.4, minZ: -56.6, maxZ: -51.4 });
+            scene.add(pierGroup);
+        }
+
         // ==================== 东方明珠广播电视塔（精细程序化建模） ====================
         function buildOrientalPearlTower() {
             pearlTowerGroup = new THREE.Group();
@@ -1020,7 +1189,7 @@
 
             for (let z = -110; z <= 110; z += 22) {
                 createStreetLamp(-56, z, poleMat, bulbMat);
-                if (Math.abs(z - 10) > 10) {
+                if (Math.abs(z - 10) > 10 && Math.abs(z - (-54)) > 10) {
                     createTree(-52, z + 8, trunkMat, leafMat);
                 }
             }
@@ -1034,6 +1203,91 @@
 
                 const tr = 31.5;
                 createTree(Math.cos(angle + 0.15) * tr, Math.sin(angle + 0.15) * tr, trunkMat, leafMat);
+            }
+        }
+
+        // ==================== 新增功能：城市道路穿梭车辆 ====================
+        function buildCityTraffic() {
+            const carColors = [0xec4899, 0x06b6d4, 0xf59e0b, 0x38bdf8];
+            const bodyMatBase = { roughness: 0.3, metalness: 0.65 };
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.9 });
+            const headlightMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3 });
+            const taillightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+
+            // 东西向大道 (z = 45) 穿梭车辆
+            for (let i = 0; i < 2; i++) {
+                const car = new THREE.Group();
+                const dir = i === 0 ? 1 : -1;
+                const colorMat = new THREE.MeshStandardMaterial({
+                    color: carColors[i % carColors.length],
+                    ...bodyMatBase
+                });
+
+                const chassis = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.95, 2.0), colorMat);
+                chassis.position.y = 0.65;
+                chassis.castShadow = true;
+                car.add(chassis);
+
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.72, 1.72), cabinMat);
+                roof.position.set(-0.15, 1.42, 0);
+                car.add(roof);
+
+                const frontLight = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.42), headlightMat);
+                frontLight.position.set(2.12, 0.72, 0.62);
+                car.add(frontLight);
+                const frontLightR = frontLight.clone();
+                frontLightR.position.z = -0.62;
+                car.add(frontLightR);
+
+                const rearLight = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.24, 0.42), taillightMat);
+                rearLight.position.set(-2.12, 0.72, 0.62);
+                car.add(rearLight);
+                const rearLightR = rearLight.clone();
+                rearLightR.position.z = -0.62;
+                car.add(rearLightR);
+
+                if (dir < 0) car.rotation.y = Math.PI;
+                car.position.set(55 + i * 48, 0.05, 45 + dir * 2.2);
+                scene.add(car);
+                cityCars.push({ mesh: car, axis: 'x', speed: 14 * dir, min: 48, max: 132 });
+            }
+
+            // 南北向大道 (x = -42) 穿梭车辆
+            for (let i = 0; i < 2; i++) {
+                const car = new THREE.Group();
+                const dir = i === 0 ? 1 : -1;
+                const colorMat = new THREE.MeshStandardMaterial({
+                    color: carColors[(i + 2) % carColors.length],
+                    ...bodyMatBase
+                });
+
+                const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.95, 4.2), colorMat);
+                chassis.position.y = 0.65;
+                chassis.castShadow = true;
+                car.add(chassis);
+
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.72, 2.3), cabinMat);
+                roof.position.set(0, 1.42, -0.15);
+                car.add(roof);
+
+                const frontLight = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 0.12), headlightMat);
+                frontLight.position.set(0.62, 0.72, 2.12);
+                car.add(frontLight);
+                const frontLightR = frontLight.clone();
+                frontLightR.position.x = -0.62;
+                car.add(frontLightR);
+
+                const rearLight = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 0.12), taillightMat);
+                rearLight.position.set(0.62, 0.72, -2.12);
+                car.add(rearLight);
+                const rearLightR = rearLight.clone();
+                rearLightR.position.x = -0.62;
+                car.add(rearLightR);
+
+                if (dir < 0) car.rotation.y = Math.PI;
+                car.position.set(-42 + dir * 2.2, 0.05, -75 + i * 70);
+                scene.add(car);
+                cityCars.push({ mesh: car, axis: 'z', speed: 12 * dir, min: -110, max: 110 });
             }
         }
 
@@ -1468,7 +1722,7 @@
             }
         }
 
-        // ==================== 真实水面波纹、游船与地标动画 ====================
+        // ==================== 真实水面波纹、游船、穿梭车辆、喷泉与地标动画 ====================
         function updateWorldAnimations(elapsed, dt) {
             if (riverMesh && riverBasePositions) {
                 const posAttr = riverMesh.geometry.attributes.position;
@@ -1507,6 +1761,26 @@
                 b.mesh.position.y = b.baseY + bob;
                 b.mesh.rotation.z = Math.sin(elapsed * 1.7 + b.phase) * 0.032;
                 b.mesh.rotation.x = Math.cos(elapsed * 2.3 + b.phase) * 0.018;
+            });
+
+            cityCars.forEach(car => {
+                if (car.axis === 'x') {
+                    car.mesh.position.x += car.speed * dt;
+                    if (car.mesh.position.x > car.max) car.mesh.position.x = car.min;
+                    if (car.mesh.position.x < car.min) car.mesh.position.x = car.max;
+                } else {
+                    car.mesh.position.z += car.speed * dt;
+                    if (car.mesh.position.z > car.max) car.mesh.position.z = car.min;
+                    if (car.mesh.position.z < car.min) car.mesh.position.z = car.max;
+                }
+            });
+
+            fountainWaterRings.forEach(fr => {
+                const cycle = (elapsed * 0.9 + fr.phase) % 2;
+                fr.mesh.position.y = 1.0 + cycle * 1.25;
+                const s = 0.7 + cycle * 0.55;
+                fr.mesh.scale.set(s, s, 1);
+                fr.mesh.material.opacity = Math.max(0.08, (1 - cycle / 2) * 0.6);
             });
 
             let nearAnyLandmark = null;
@@ -1773,6 +2047,14 @@
             document.getElementById('teleport-bund-btn').addEventListener('click', () => {
                 state.player.pos.set(-58, 0, 12);
                 state.camera.yaw = -Math.PI / 2.4;
+            });
+            document.getElementById('teleport-park-btn').addEventListener('click', () => {
+                state.player.pos.set(16, 0, -33);
+                state.camera.yaw = 0;
+            });
+            document.getElementById('teleport-ferry-btn').addEventListener('click', () => {
+                state.player.pos.set(-56, 0, -48);
+                state.camera.yaw = -Math.PI / 2.2;
             });
 
             document.getElementById('close-landmark-btn').addEventListener('click', hideLandmarkCard);
