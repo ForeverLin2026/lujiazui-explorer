@@ -6,6 +6,7 @@
     <title>漫步陆家嘴 - 东方明珠城市探索</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
         
@@ -480,6 +481,7 @@
             buildCentralGreenParkAndPier();
             buildStreetProps();
             buildTeslaFleet();
+            loadRealisticShowcaseCars();
             buildCheckpoints();
             buildEnergyOrbs();
             buildRealisticCharacter();
@@ -1453,6 +1455,59 @@
                     max: 110
                 });
             }
+        }
+
+        // ==================== 高品质 GLB 展示车辆 ====================
+        // 模型由 vinish.dev 提供，CC BY 4.0；署名见 README。
+        function loadRealisticShowcaseCars() {
+            if (!THREE.GLTFLoader) {
+                console.warn('GLTFLoader 未加载，跳过高品质展示车辆');
+                return;
+            }
+
+            const loader = new THREE.GLTFLoader();
+            const showcaseCars = [
+                {
+                    name: 'Executive Sedan',
+                    url: 'https://models.vinish.dev/realistic-cars/executive-sedan.glb',
+                    position: new THREE.Vector3(68, 0.05, 55.5),
+                    rotation: Math.PI / 2
+                },
+                {
+                    name: 'Luxury SUV',
+                    url: 'https://models.vinish.dev/realistic-cars/luxury-suv.glb',
+                    position: new THREE.Vector3(76, 0.05, 55.5),
+                    rotation: Math.PI / 2
+                }
+            ];
+
+            showcaseCars.forEach(config => {
+                loader.load(
+                    config.url,
+                    gltf => {
+                        const vehicle = gltf.scene;
+                        vehicle.name = config.name;
+                        vehicle.position.copy(config.position);
+                        vehicle.rotation.y = config.rotation;
+                        vehicle.traverse(node => {
+                            if (node.isMesh) {
+                                node.castShadow = true;
+                                node.receiveShadow = true;
+                                if (node.material) {
+                                    const materials = Array.isArray(node.material) ? node.material : [node.material];
+                                    materials.forEach(material => {
+                                        if ('envMapIntensity' in material) material.envMapIntensity = 0.8;
+                                    });
+                                }
+                            }
+                        });
+                        scene.add(vehicle);
+                        console.info(config.name + ' 已加载');
+                    },
+                    undefined,
+                    error => console.error(config.name + ' 加载失败：', error)
+                );
+            });
         }
 
         function createStreetLamp(x, z, poleMat, bulbMat) {
