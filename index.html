@@ -1467,8 +1467,11 @@
             const addFallbackCar = config => {
                 const built = createTeslaCar(config.color, config.model);
                 built.car.name = config.name + ' (fallback)';
+                built.car.scale.setScalar(1.18);
                 scene.add(built.car);
-                cityCars.push({ mesh: built.car, wheels: built.wheels, path: 'pearl-ring', radius: 42, angle: config.angle, angularSpeed: config.angularSpeed, longAxisIsX: true, groundOffset: 0.04 });
+                const carState = { mesh: built.car, wheels: built.wheels, path: 'pearl-ring', radius: 42, angle: config.angle, angularSpeed: config.angularSpeed, longAxisIsX: true, groundOffset: 0.04, fallback: true };
+                cityCars.push(carState);
+                return carState;
             };
             if (!THREE.GLTFLoader) {
                 showcaseCars.forEach(addFallbackCar);
@@ -1476,6 +1479,7 @@
             }
             const loader = new THREE.GLTFLoader();
             showcaseCars.forEach(config => {
+                const fallbackState = addFallbackCar(config); // 先立即显示车辆，不等待外部模型网络请求
                 loader.load(config.url, gltf => {
                     const vehicle = gltf.scene;
                     vehicle.name = config.name;
@@ -1492,11 +1496,14 @@
                     });
                     const scaledBounds = new THREE.Box3().setFromObject(vehicle);
                     scene.add(vehicle);
+                    scene.remove(fallbackState.mesh);
+                    const fallbackIndex = cityCars.indexOf(fallbackState);
+                    if (fallbackIndex >= 0) cityCars.splice(fallbackIndex, 1);
                     cityCars.push({ mesh: vehicle, path: 'pearl-ring', radius: 42, angle: config.angle, angularSpeed: config.angularSpeed, longAxisIsX, groundOffset: -scaledBounds.min.y });
                     console.info(config.name + ' 已加载并加入东方明珠环形道路');
                 }, undefined, error => {
                     console.error(config.name + ' GLB 加载失败，启用内置车辆', error);
-                    addFallbackCar(config);
+                    // 已有立即显示的备用车，保持运行即可。
                 });
             });
         }
