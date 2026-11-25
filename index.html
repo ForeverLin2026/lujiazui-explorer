@@ -143,7 +143,7 @@
                 漫步陆家嘴
             </h1>
             <p class="text-slate-300 text-sm sm:text-base mb-6">
-                自由穿梭于上海金融中心，近距离仰望东方明珠、环球金融中心与上海中心大厦，漫步黄浦江滨江大道。
+                自由穿梭于上海金融中心，近距离仰望东方明珠、环球金融中心与上海中心大厦，漫步黄浦江滨江大道并收集城市能量球。
             </p>
 
             <!-- 操作指南网格 -->
@@ -177,13 +177,21 @@
         
         <!-- 顶部栏：状态信息 + 模式控制 -->
         <div class="flex flex-wrap items-start justify-between gap-3 p-3 sm:p-5">
-            <!-- 探索进度与坐标 -->
+            <!-- 探索进度、能量球与积分 -->
             <div class="glass-panel rounded-2xl px-4 py-2.5 pointer-events-auto flex items-center gap-4">
                 <div>
                     <div class="text-[11px] text-slate-400 uppercase tracking-wider">探索打卡点</div>
                     <div class="text-base sm:text-lg font-bold text-pink-400 flex items-center gap-1.5">
                         <span>📍</span>
                         <span id="landmark-counter">0 / 7</span>
+                    </div>
+                </div>
+                <div class="h-7 w-px bg-slate-700"></div>
+                <div>
+                    <div class="text-[11px] text-slate-400 uppercase tracking-wider">能量球</div>
+                    <div class="text-base sm:text-lg font-bold text-emerald-400 flex items-center gap-1">
+                        <span>⚡</span>
+                        <span id="orb-counter">0 / 12</span>
                     </div>
                 </div>
                 <div class="h-7 w-px bg-slate-700"></div>
@@ -227,8 +235,9 @@
             <div class="glass-panel rounded-2xl p-2 flex flex-col items-center">
                 <canvas id="minimap-canvas" width="136" height="136" class="rounded-xl bg-slate-950/90 border border-slate-800"></canvas>
                 <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-pink-500"></span> 东方明珠
-                    <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span> 打卡点
+                    <span class="inline-block w-2 h-2 rounded-full bg-pink-500"></span> 明珠
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span> 地标
+                    <span class="inline-block w-2 h-2 rounded-full bg-cyan-400"></span> 能量球
                 </div>
             </div>
         </div>
@@ -316,7 +325,7 @@
         /**
          * 漫步陆家嘴 - 3D 城市探索游戏核心逻辑
          * 包含：Three.js 场景搭建、东方明珠程序化建模、陆家嘴天际线、黄浦江波纹与游船、
-         * 陆家嘴中心绿地喷泉花坛、东昌路轮渡码头与长椅凉亭、城市穿梭车辆、
+         * 陆家嘴中心绿地喷泉花坛、东昌路轮渡码头与长椅凉亭、城市穿梭车辆、可收集能量球、
          * 真实比例与关节角色动画、第一/第三人称相机控制、碰撞检测、地标打卡与小地图雷达。
          */
 
@@ -328,6 +337,7 @@
             photoMode: false,
             score: 0,
             unlockedLandmarks: new Set(),
+            collectedOrbs: new Set(),
             activeLandmarkId: null,
             // 玩家物理与位置
             player: {
@@ -364,11 +374,11 @@
         let playerGroup, bodyRig, leftLegPivot, rightLegPivot, leftArmPivot, rightArmPivot, headGroup;
         let riverMesh, riverBasePositions, riverBumpTex, riverMat;
         let boats = [], streetLampBulbs = [], buildingWindowMats = [];
-        let cityCars = [], fountainWaterRings = [];
+        let cityCars = [], fountainWaterRings = [], energyOrbs = [];
         let colliders = []; // 建筑物与障碍物 AABB 碰撞箱
         let checkpointMeshes = [];
 
-        // 打卡地标数据（扩充至 7 个陆家嘴经典点位，保持原有结构与风格）
+        // 打卡地标数据（7 个陆家嘴经典点位）
         const LANDMARKS = [
             {
                 id: 'pearl_plaza',
@@ -428,6 +438,22 @@
             }
         ];
 
+        // 城市能量球点位（12 个分布在广场、滨江、绿地、渡口与核心区之间）
+        const ENERGY_ORB_LOCATIONS = [
+            { id: 'orb_1', x: -12, y: 1.5, z: 22, points: 50 },
+            { id: 'orb_2', x: 12, y: 1.5, z: 22, points: 50 },
+            { id: 'orb_3', x: 0, y: 2.2, z: 42, points: 50 },
+            { id: 'orb_4', x: -58, y: 1.5, z: 28, points: 50 },
+            { id: 'orb_5', x: -58, y: 1.5, z: -8, points: 50 },
+            { id: 'orb_6', x: -58, y: 1.5, z: -34, points: 50 },
+            { id: 'orb_7', x: 16, y: 1.8, z: -26, points: 50 },
+            { id: 'orb_8', x: 26, y: 1.5, z: -42, points: 50 },
+            { id: 'orb_9', x: 46, y: 1.8, z: 4, points: 50 },
+            { id: 'orb_10', x: 56, y: 1.8, z: -12, points: 50 },
+            { id: 'orb_11', x: -28, y: 1.5, z: 32, points: 50 },
+            { id: 'orb_12', x: -48, y: 1.5, z: -54, points: 50 }
+        ];
+
         // ==================== 初始化入口 ====================
         function init() {
             const container = document.getElementById('canvas-container');
@@ -459,6 +485,7 @@
             buildStreetProps();
             buildCityTraffic();
             buildCheckpoints();
+            buildEnergyOrbs();
             buildPlayerCharacter();
 
             // 5. 设置默认夜景氛围
@@ -766,9 +793,8 @@
             }
         }
 
-        // ==================== 新增场景：中心绿地喷泉花坛 & 东昌路轮渡码头凉亭长椅 ====================
+        // ==================== 中心绿地喷泉花坛 & 东昌路轮渡码头凉亭长椅 ====================
         function buildCentralGreenParkAndPier() {
-            // 1. 陆家嘴中心绿地喷泉广场 (x: 16, z: -42)
             const parkGroup = new THREE.Group();
             parkGroup.position.set(16, 0, -42);
 
@@ -810,7 +836,6 @@
             nozzle.position.y = 0.85;
             parkGroup.add(nozzle);
 
-            // 喷泉水环动画组
             for (let r = 0; r < 2; r++) {
                 const sprayRing = new THREE.Mesh(
                     new THREE.TorusGeometry(1.1 + r * 0.9, 0.09, 8, 24),
@@ -826,7 +851,6 @@
                 fountainWaterRings.push({ mesh: sprayRing, baseY: 1.6 + r * 0.8, phase: r * 1.5 });
             }
 
-            // 环绕花坛与长椅
             const flowerColors = [0xf472b6, 0xfbbf24, 0x38bdf8, 0xc084fc];
             for (let i = 0; i < 6; i++) {
                 const a = (i * Math.PI * 2) / 6;
@@ -854,7 +878,6 @@
             colliders.push({ minX: 11.5, maxX: 20.5, minZ: -46.5, maxZ: -37.5 });
             scene.add(parkGroup);
 
-            // 2. 东昌路轮渡码头凉亭与观景长椅 (x: -60, z: -54)
             const pierGroup = new THREE.Group();
             pierGroup.position.set(-60, 0, -54);
 
@@ -862,7 +885,6 @@
             const roofMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.45, metalness: 0.5 });
             const trimCyanMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
 
-            // 观景凉亭
             const postCoords = [[-2.4, -2.4], [2.4, -2.4], [-2.4, 2.4], [2.4, 2.4]];
             postCoords.forEach(([px, pz]) => {
                 const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 3.6, 10), woodMat);
@@ -882,7 +904,6 @@
             roofAccent.position.y = 3.55;
             pierGroup.add(roofAccent);
 
-            // 码头候船长椅
             [-4.8, 4.8].forEach(bz => {
                 const benchGroup = new THREE.Group();
                 benchGroup.position.set(0, 0, bz);
@@ -1206,7 +1227,7 @@
             }
         }
 
-        // ==================== 新增功能：城市道路穿梭车辆 ====================
+        // ==================== 城市道路穿梭车辆 ====================
         function buildCityTraffic() {
             const carColors = [0xec4899, 0x06b6d4, 0xf59e0b, 0x38bdf8];
             const bodyMatBase = { roughness: 0.3, metalness: 0.65 };
@@ -1214,7 +1235,6 @@
             const headlightMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3 });
             const taillightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
 
-            // 东西向大道 (z = 45) 穿梭车辆
             for (let i = 0; i < 2; i++) {
                 const car = new THREE.Group();
                 const dir = i === 0 ? 1 : -1;
@@ -1252,7 +1272,6 @@
                 cityCars.push({ mesh: car, axis: 'x', speed: 14 * dir, min: 48, max: 132 });
             }
 
-            // 南北向大道 (x = -42) 穿梭车辆
             for (let i = 0; i < 2; i++) {
                 const car = new THREE.Group();
                 const dir = i === 0 ? 1 : -1;
@@ -1362,6 +1381,53 @@
                 scene.add(group);
                 checkpointMeshes.push({ id: lm.id, group, gem, ring, beam });
             });
+        }
+
+        // ==================== 可收集城市能量球 ====================
+        function buildEnergyOrbs() {
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0x22d3ee,
+                emissive: 0x06b6d4,
+                emissiveIntensity: 0.85,
+                roughness: 0.15,
+                metalness: 0.5
+            });
+            const haloMat = new THREE.MeshBasicMaterial({
+                color: 0x67e8f9,
+                transparent: true,
+                opacity: 0.65,
+                side: THREE.DoubleSide
+            });
+
+            ENERGY_ORB_LOCATIONS.forEach((loc, idx) => {
+                const group = new THREE.Group();
+                group.position.set(loc.x, loc.y, loc.z);
+
+                const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.58, 1), coreMat);
+                group.add(core);
+
+                const halo = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.05, 8, 28), haloMat);
+                group.add(halo);
+
+                scene.add(group);
+                energyOrbs.push({
+                    id: loc.id,
+                    x: loc.x,
+                    baseY: loc.y,
+                    z: loc.z,
+                    points: loc.points,
+                    phase: idx * 0.7,
+                    group,
+                    core,
+                    halo,
+                    collected: false
+                });
+            });
+
+            const counterEl = document.getElementById('orb-counter');
+            if (counterEl) {
+                counterEl.textContent = `0 / ${energyOrbs.length}`;
+            }
         }
 
         // ==================== 真实比例与关节层级 3D 角色模型 ====================
@@ -1722,7 +1788,7 @@
             }
         }
 
-        // ==================== 真实水面波纹、游船、穿梭车辆、喷泉与地标动画 ====================
+        // ==================== 真实水面波纹、游船、穿梭车辆、喷泉、能量球与地标动画 ====================
         function updateWorldAnimations(elapsed, dt) {
             if (riverMesh && riverBasePositions) {
                 const posAttr = riverMesh.geometry.attributes.position;
@@ -1781,6 +1847,30 @@
                 const s = 0.7 + cycle * 0.55;
                 fr.mesh.scale.set(s, s, 1);
                 fr.mesh.material.opacity = Math.max(0.08, (1 - cycle / 2) * 0.6);
+            });
+
+            // 能量球旋转浮动与收集检测
+            energyOrbs.forEach(orb => {
+                if (orb.collected) return;
+                orb.group.position.y = orb.baseY + Math.sin(elapsed * 2.6 + orb.phase) * 0.24;
+                orb.core.rotation.y = elapsed * 2.2;
+                orb.core.rotation.x = elapsed * 1.4;
+                orb.halo.rotation.x = Math.sin(elapsed * 1.8 + orb.phase) * 0.8;
+                orb.halo.rotation.y = elapsed * 1.6;
+
+                if (state.started) {
+                    const dx = state.player.pos.x - orb.x;
+                    const dz = state.player.pos.z - orb.z;
+                    const dy = (state.player.pos.y + 1.2) - orb.group.position.y;
+                    if (Math.hypot(dx, dz) < 2.4 && Math.abs(dy) < 2.6) {
+                        orb.collected = true;
+                        orb.group.visible = false;
+                        state.collectedOrbs.add(orb.id);
+                        state.score += orb.points;
+                        document.getElementById('orb-counter').textContent = `${state.collectedOrbs.size} / ${energyOrbs.length}`;
+                        document.getElementById('score-display').textContent = state.score;
+                    }
+                }
             });
 
             let nearAnyLandmark = null;
@@ -1861,6 +1951,18 @@
                 ctx.fillStyle = '#0369a1';
                 ctx.fillRect(0, 0, Math.min(w, riverEdgeX), h);
             }
+
+            energyOrbs.forEach(orb => {
+                if (orb.collected) return;
+                const ox = cx + (orb.x - state.player.pos.x) * scale;
+                const oy = cy + (orb.z - state.player.pos.z) * scale;
+                if (ox > 4 && ox < w - 4 && oy > 4 && oy < h - 4) {
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, 2.2, 0, Math.PI * 2);
+                    ctx.fillStyle = '#22d3ee';
+                    ctx.fill();
+                }
+            });
 
             LANDMARKS.forEach(lm => {
                 const mx = cx + (lm.pos.x - state.player.pos.x) * scale;
