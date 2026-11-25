@@ -153,7 +153,7 @@
                     <span class="text-slate-300">行走移动</span>
                 </div>
                 <div class="flex items-center gap-2.5">
-                    <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-pink-400 font-bold">鼠标拖拽</span>
+                    <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-pink-400 font-bold">鼠标拖拽 / 触控板</span>
                     <span class="text-slate-300">环顾四周视角</span>
                 </div>
                 <div class="flex items-center gap-2.5">
@@ -2516,8 +2516,9 @@
         }
 
         // ==================== 视角俯仰角更新辅助 ====================
+        // 第一人称模式下：向上滑动/拖动（deltaY < 0）使 pitch 增大（向上看）；向下滑动/拖动（deltaY > 0）使 pitch 减小（向下看）
         function applyPitchDelta(deltaY) {
-            const pitchSign = state.cameraMode === 'first' ? 1 : -1;
+            const pitchSign = state.cameraMode === 'first' ? -1 : -1;
             state.camera.pitch = Math.max(
                 -0.85,
                 Math.min(0.95, state.camera.pitch + deltaY * 0.0055 * pitchSign)
@@ -2576,8 +2577,11 @@
                 state.camera.isDragging = false;
             });
 
+            // 触控板双指上下滑动（wheel）与滚轮支持：第一人称时上下滑动抬头/低头，第三人称时缩放距离
             dom.addEventListener('wheel', (e) => {
-                if (state.cameraMode === 'third') {
+                if (state.cameraMode === 'first') {
+                    applyPitchDelta(e.deltaY * 0.35);
+                } else {
                     state.camera.distance = Math.max(5, Math.min(26, state.camera.distance + e.deltaY * 0.01));
                 }
             }, { passive: true });
