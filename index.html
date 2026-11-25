@@ -6,6 +6,7 @@
     <title>漫步陆家嘴 - 东方明珠城市探索</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
         
@@ -480,6 +481,7 @@
             buildCentralGreenParkAndPier();
             buildStreetProps();
             buildTeslaFleet();
+            loadRealisticShowcaseCars();
             buildCheckpoints();
             buildEnergyOrbs();
             buildRealisticCharacter();
@@ -1478,45 +1480,75 @@
         }
 
         function buildTeslaFleet() {
-            const teslaColors = [0xdc2626, 0xf8fafc, 0x2563eb, 0x475569];
+            // 本场景只保留东方明珠塔周围的展示车辆，避免车辆跑到远处道路。
+            // 两辆车由 loadRealisticShowcaseCars() 创建，并沿广场外围环路持续行驶。
+        }
 
-            for (let i = 0; i < 2; i++) {
-                const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(
-                    teslaColors[i % teslaColors.length],
-                    i === 0 ? 'model3' : 'modely'
-                );
-                if (dir < 0) car.rotation.y = Math.PI;
-                car.position.set(55 + i * 48, 0.04, 45 + dir * 2.2);
-                scene.add(car);
-                cityCars.push({
-                    mesh: car,
-                    wheels,
-                    axis: 'x',
-                    speed: 15 * dir,
-                    min: 48,
-                    max: 132
-                });
+        // ==================== 高品质 GLB 展示车辆 ====================
+        // 模型由 vinish.dev 提供，CC BY 4.0；署名见 README。
+        function loadRealisticShowcaseCars() {
+            // 只使用真实 PBR GLB 车辆，不再创建低多边形备用车。
+            const showcaseCars = [
+                { name: 'Executive Sedan', url: 'https://models.vinish.dev/realistic-cars/executive-sedan.glb', angle: 0.35, angularSpeed: 0.22 },
+                { name: 'Luxury SUV', url: 'https://models.vinish.dev/realistic-cars/luxury-suv.glb', angle: Math.PI + 0.35, angularSpeed: -0.20 }
+            ];
+
+            if (!THREE.GLTFLoader) {
+                console.error('GLTFLoader 未加载，真实车辆无法显示。');
+                return;
             }
 
-            for (let i = 0; i < 2; i++) {
-                const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(
-                    teslaColors[(i + 2) % teslaColors.length],
-                    i === 1 ? 'modely' : 'model3'
-                );
-                car.rotation.y = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
-                car.position.set(-42 + dir * 2.2, 0.04, -75 + i * 70);
-                scene.add(car);
-                cityCars.push({
-                    mesh: car,
-                    wheels,
-                    axis: 'z',
-                    speed: 13.5 * dir,
-                    min: -110,
-                    max: 110
+            const loader = new THREE.GLTFLoader();
+            showcaseCars.forEach(config => {
+                loader.load(config.url, gltf => {
+                    const vehicle = gltf.scene;
+                    vehicle.name = config.name;
+
+                    const initialBounds = new THREE.Box3().setFromObject(vehicle);
+                    const initialSize = initialBounds.getSize(new THREE.Vector3());
+                    const longAxisIsX = initialSize.x >= initialSize.z;
+                    const length = Math.max(initialSize.x, initialSize.z);
+                    if (length > 0) vehicle.scale.setScalar(4.8 / length);
+
+                    const wheelNodes = [];
+                    vehicle.traverse(node => {
+                        if (node.isMesh) {
+                            node.castShadow = true;
+                            node.receiveShadow = true;
+                        }
+                        if (/^Wheel_(FL|FR|RL|RR)$/.test(node.name)) {
+                            node.rotation.order = 'YXZ';
+                            wheelNodes.push(node);
+                        }
+                    });
+
+                    const bounds = new THREE.Box3().setFromObject(vehicle);
+                    const carState = {
+                        mesh: vehicle,
+                        wheels: wheelNodes,
+                        path: 'pearl-ring',
+                        radius: 42,
+                        angle: config.angle,
+                        angularSpeed: config.angularSpeed,
+                        longAxisIsX,
+                        groundOffset: -bounds.min.y,
+                        wheelRadius: 0.345,
+                        realModel: true
+                    };
+
+                    vehicle.position.set(
+                        Math.cos(carState.angle) * carState.radius,
+                        carState.groundOffset,
+                        Math.sin(carState.angle) * carState.radius
+                    );
+                    vehicle.rotation.y = longAxisIsX ? carState.angle - Math.PI / 2 : -carState.angle;
+                    scene.add(vehicle);
+                    cityCars.push(carState);
+                    console.info(config.name + ' 写实 GLB 已加载，加入东方明珠环形道路');
+                }, undefined, error => {
+                    console.error(config.name + ' 写实 GLB 加载失败；不会用简模冒充真实车辆。', error);
                 });
-            }
+            });
         }
 
         function createStreetLamp(x, z, poleMat, bulbMat) {
@@ -2451,13 +2483,15 @@
             });
 
             cityCars.forEach(car => {
-                const absSpeed = Math.abs(car.speed);
-                if (car.wheels) {
-                    car.wheels.forEach(w => {
-                        w.rotation.z -= (absSpeed / 0.38) * dt;
-                    });
+                if (car.path === 'pearl-ring') {
+                    car.angle += car.angularSpeed * dt;
+                    car.mesh.position.set(Math.cos(car.angle) * car.radius, car.groundOffset, Math.sin(car.angle) * car.radius);
+                    car.mesh.rotation.y = car.longAxisIsX ? car.angle - Math.PI / 2 : -car.angle;
+                    if (car.wheels) car.wheels.forEach(w => { w.rotation.z -= (Math.abs(car.angularSpeed) * car.radius / 0.38) * dt; });
+                    return;
                 }
-
+                const absSpeed = Math.abs(car.speed);
+                if (car.wheels) car.wheels.forEach(w => { w.rotation.z -= (absSpeed / 0.38) * dt; });
                 if (car.axis === 'x') {
                     car.mesh.position.x += car.speed * dt;
                     if (car.mesh.position.x > car.max) car.mesh.position.x = car.min;
@@ -2468,7 +2502,6 @@
                     if (car.mesh.position.z < car.min) car.mesh.position.z = car.max;
                 }
             });
-
             fountainWaterRings.forEach(fr => {
                 const cycle = (elapsed * 0.9 + fr.phase) % 2;
                 fr.mesh.position.y = 1.0 + cycle * 1.25;

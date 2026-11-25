@@ -13,3 +13,13 @@
 - **地标打卡与能量球收集**：共设 **7 个打卡地标**（含世纪大道起点、北滨江光影长廊）与 **8 颗陆家嘴探索能量球**，小地图实时显示未收集目标与当前位置。
 - **双视角与自由移动**：`W A S D` / 方向键行走、`Shift` 奔跑、`Space` 跳跃、鼠标左键拖拽环顾，支持第一人称与第三人称视角切换。
 - **氛围切换与打卡明信片**：支持璀璨夜景、陆家嘴黄昏、晴朗白昼切换，走入发光光柱解锁地标打卡，并可生成带统计信息的打卡明信片。
+
+
+## 第三方车辆模型署名
+
+游戏场景额外加载以下高品质 GLB 车辆模型（由模型托管站点在线提供）：
+
+- "Executive Sedan" by vinish.dev — https://vinish.dev/free-3d-models/realistic-cars
+- "Luxury SUV" by vinish.dev — https://vinish.dev/free-3d-models/realistic-cars
+
+许可：Creative Commons Attribution 4.0 International (CC BY 4.0)。模型允许商业使用与修改，需保留作者署名。模型文件由 vinish.dev 托管，游戏运行时通过 GLTFLoader 加载。
