@@ -1416,45 +1416,8 @@
         }
 
         function buildTeslaFleet() {
-            const teslaColors = [0xdc2626, 0xf8fafc, 0x2563eb, 0x475569];
-
-            for (let i = 0; i < 2; i++) {
-                const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(
-                    teslaColors[i % teslaColors.length],
-                    i === 0 ? 'model3' : 'modely'
-                );
-                if (dir < 0) car.rotation.y = Math.PI;
-                car.position.set(55 + i * 48, 0.04, 45 + dir * 2.2);
-                scene.add(car);
-                cityCars.push({
-                    mesh: car,
-                    wheels,
-                    axis: 'x',
-                    speed: 15 * dir,
-                    min: 48,
-                    max: 132
-                });
-            }
-
-            for (let i = 0; i < 2; i++) {
-                const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(
-                    teslaColors[(i + 2) % teslaColors.length],
-                    i === 1 ? 'modely' : 'model3'
-                );
-                car.rotation.y = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
-                car.position.set(-42 + dir * 2.2, 0.04, -75 + i * 70);
-                scene.add(car);
-                cityCars.push({
-                    mesh: car,
-                    wheels,
-                    axis: 'z',
-                    speed: 13.5 * dir,
-                    min: -110,
-                    max: 110
-                });
-            }
+            // 本场景只保留东方明珠塔周围的展示车辆，避免车辆跑到远处道路。
+            // 两辆车由 loadRealisticShowcaseCars() 创建，并沿广场外围环路持续行驶。
         }
 
         // ==================== 高品质 GLB 展示车辆 ====================
