@@ -1470,14 +1470,16 @@
                 {
                     name: 'Executive Sedan',
                     url: 'https://models.vinish.dev/realistic-cars/executive-sedan.glb',
-                    position: new THREE.Vector3(68, 0.05, 55.5),
-                    rotation: Math.PI / 2
+                    laneX: -45.5,
+                    startZ: -105,
+                    speed: 13
                 },
                 {
                     name: 'Luxury SUV',
                     url: 'https://models.vinish.dev/realistic-cars/luxury-suv.glb',
-                    position: new THREE.Vector3(76, 0.05, 55.5),
-                    rotation: Math.PI / 2
+                    laneX: -38.5,
+                    startZ: 105,
+                    speed: -12
                 }
             ];
 
@@ -1487,8 +1489,18 @@
                     gltf => {
                         const vehicle = gltf.scene;
                         vehicle.name = config.name;
-                        vehicle.position.copy(config.position);
-                        vehicle.rotation.y = config.rotation;
+
+                        // 统一车辆长度到约 4.8 米，并依据模型长轴自动校正行驶方向。
+                        const bounds = new THREE.Box3().setFromObject(vehicle);
+                        const size = bounds.getSize(new THREE.Vector3());
+                        const longAxisIsX = size.x >= size.z;
+                        const modelLength = Math.max(size.x, size.z);
+                        if (modelLength > 0) vehicle.scale.setScalar(4.8 / modelLength);
+
+                        vehicle.rotation.y = (longAxisIsX ? Math.PI / 2 : 0) + (config.speed < 0 ? Math.PI : 0);
+                        const scaledBounds = new THREE.Box3().setFromObject(vehicle);
+                        vehicle.position.set(config.laneX, -scaledBounds.min.y, config.startZ);
+
                         vehicle.traverse(node => {
                             if (node.isMesh) {
                                 node.castShadow = true;
@@ -1501,8 +1513,17 @@
                                 }
                             }
                         });
+
                         scene.add(vehicle);
-                        console.info(config.name + ' 已加载');
+                        // 滨江大道：沿江南北向道路双向行驶。
+                        cityCars.push({
+                            mesh: vehicle,
+                            axis: 'z',
+                            speed: config.speed,
+                            min: -132,
+                            max: 132
+                        });
+                        console.info(config.name + ' 已加入滨江大道车流');
                     },
                     undefined,
                     error => console.error(config.name + ' 加载失败：', error)
