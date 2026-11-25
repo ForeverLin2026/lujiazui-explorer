@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>漫步陆家嘴 - 东方明珠城市探索</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
         
@@ -205,13 +205,13 @@
             <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
                 <!-- 昼夜/霓虹切换 -->
                 <div class="glass-panel rounded-2xl p-1 flex items-center gap-1">
-                    <button data-time="night" class="time-btn active px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white transition cursor-pointer">
+                    <button data-time="night" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer">
                         🌃 璀璨夜景
                     </button>
                     <button data-time="sunset" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer">
                         🌇 陆家嘴黄昏
                     </button>
-                    <button data-time="day" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer">
+                    <button data-time="day" class="time-btn active px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white transition cursor-pointer">
                         ☀️ 晴朗白昼
                     </button>
                 </div>
@@ -329,7 +329,7 @@
         // ==================== 全局状态与配置 ====================
         const state = {
             started: false,
-            timeMode: 'night', // 'night' | 'sunset' | 'day'
+            timeMode: 'day', // daylight is the primary presentation mode
             cameraMode: 'third', // 'third' | 'first'
             photoMode: false,
             score: 0,
@@ -377,6 +377,7 @@
         let cityCars = [], fountainWaterRings = [], energyOrbs = [];
         let colliders = [];
         let checkpointMeshes = [];
+        let daylightEnvironment, asphaltTexture, concreteTexture, plazaTexture, facadeTexture;
 
         // 打卡地标数据（7 个陆家嘴经典点位）
         const LANDMARKS = [
@@ -454,6 +455,94 @@
             { id: 'orb_12', x: -48, y: 1.5, z: -54, points: 50 }
         ];
 
+        // ==================== 程序化写实材质与日光环境 ====================
+        function createSurfaceTexture(baseColor, variation, repeatX, repeatY, seamColor) {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0, 0, size, size);
+
+            // Deterministic fine grain keeps surfaces from looking perfectly synthetic.
+            let seed = 9173;
+            const random = () => {
+                seed = (seed * 1664525 + 1013904223) >>> 0;
+                return seed / 4294967296;
+            };
+            for (let i = 0; i < 22000; i++) {
+                const alpha = 0.025 + random() * 0.11;
+                ctx.fillStyle = random() > 0.5
+                    ? `rgba(255,255,255,${alpha})`
+                    : `rgba(0,0,0,${alpha})`;
+                const w = 1 + random() * 3;
+                const h = 1 + random() * 3;
+                ctx.fillRect(random() * size, random() * size, w, h);
+            }
+
+            if (seamColor) {
+                ctx.strokeStyle = seamColor;
+                ctx.lineWidth = 2;
+                for (let p = 0; p <= size; p += 128) {
+                    ctx.beginPath();
+                    ctx.moveTo(p, 0);
+                    ctx.lineTo(p, size);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(0, p);
+                    ctx.lineTo(size, p);
+                    ctx.stroke();
+                }
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(repeatX, repeatY);
+            texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+            texture.encoding = THREE.sRGBEncoding;
+            return texture;
+        }
+
+        function createDaylightEnvironment() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            const sky = ctx.createLinearGradient(0, 0, 0, 512);
+            sky.addColorStop(0, '#4f91c8');
+            sky.addColorStop(0.48, '#b9d8eb');
+            sky.addColorStop(0.72, '#e4edf0');
+            sky.addColorStop(1, '#7b8582');
+            ctx.fillStyle = sky;
+            ctx.fillRect(0, 0, 1024, 512);
+
+            // Soft sun disc and broad halo for believable glass reflections.
+            const sunGlow = ctx.createRadialGradient(720, 112, 8, 720, 112, 190);
+            sunGlow.addColorStop(0, 'rgba(255,250,224,0.92)');
+            sunGlow.addColorStop(0.12, 'rgba(255,248,225,0.34)');
+            sunGlow.addColorStop(1, 'rgba(255,248,225,0)');
+            ctx.fillStyle = sunGlow;
+            ctx.fillRect(500, 0, 440, 330);
+
+            // Low-contrast cloud bands keep reflections from appearing flat.
+            for (let i = 0; i < 18; i++) {
+                const y = 45 + i * 18;
+                ctx.fillStyle = `rgba(255,255,255,${0.018 + (i % 4) * 0.008})`;
+                ctx.fillRect(0, y, 1024, 2 + (i % 3));
+            }
+
+            const ground = ctx.createLinearGradient(0, 350, 0, 512);
+            ground.addColorStop(0, '#89928e');
+            ground.addColorStop(1, '#343c3d');
+            ctx.fillStyle = ground;
+            ctx.fillRect(0, 350, 1024, 162);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            texture.encoding = THREE.sRGBEncoding;
+            return texture;
+        }
+
         // ==================== 初始化入口 ====================
         function init() {
             const container = document.getElementById('canvas-container');
@@ -466,13 +555,16 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+            renderer.outputEncoding = THREE.sRGBEncoding;
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.18;
+            renderer.toneMappingExposure = 1.05;
             container.appendChild(renderer.domElement);
 
+            daylightEnvironment = createDaylightEnvironment();
+            scene.environment = daylightEnvironment;
             setupLighting();
             buildGroundAndRiver();
             buildOrientalPearlTower();
@@ -484,7 +576,7 @@
             buildEnergyOrbs();
             buildRealisticCharacter();
 
-            applyTimeTheme('night');
+            applyTimeTheme('day');
             bindEvents();
         }
 
@@ -503,11 +595,13 @@
             dirLight.shadow.mapSize.height = 2048;
             dirLight.shadow.camera.near = 10;
             dirLight.shadow.camera.far = 450;
-            const d = 130;
+            const d = 112;
             dirLight.shadow.camera.left = -d;
             dirLight.shadow.camera.right = d;
             dirLight.shadow.camera.top = d;
             dirLight.shadow.camera.bottom = -d;
+            dirLight.shadow.bias = -0.00012;
+            dirLight.shadow.normalBias = 0.025;
             scene.add(dirLight);
         }
 
@@ -547,11 +641,15 @@
 
         // ==================== 地面、道路、广场与黄浦江 ====================
         function buildGroundAndRiver() {
+            asphaltTexture = createSurfaceTexture('#343a3b', 0.12, 8, 8);
+            concreteTexture = createSurfaceTexture('#a6a69f', 0.08, 5, 5, 'rgba(55,60,60,0.10)');
+            plazaTexture = createSurfaceTexture('#777d7c', 0.07, 7, 7, 'rgba(28,34,35,0.22)');
             const landGeo = new THREE.BoxGeometry(320, 2, 360);
             const landMat = new THREE.MeshStandardMaterial({
-                color: 0x1e2533,
-                roughness: 0.85,
-                metalness: 0.1
+                color: 0xc4c5bd,
+                map: concreteTexture,
+                roughness: 0.94,
+                metalness: 0.02
             });
             const landMesh = new THREE.Mesh(landGeo, landMat);
             landMesh.position.set(92, -1, 0);
@@ -560,9 +658,10 @@
 
             const plazaGeo = new THREE.CylinderGeometry(36, 36, 0.12, 64);
             const plazaMat = new THREE.MeshStandardMaterial({
-                color: 0x334155,
-                roughness: 0.6,
-                metalness: 0.2
+                color: 0xb9bbb5,
+                map: plazaTexture,
+                roughness: 0.82,
+                metalness: 0.04
             });
             const plaza = new THREE.Mesh(plazaGeo, plazaMat);
             plaza.position.set(0, 0.04, 0);
@@ -576,7 +675,7 @@
             ring.position.set(0, 0.12, 0);
             scene.add(ring);
 
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.88, metalness: 0.12 });
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x777d80, map: asphaltTexture, roughness: 0.96, metalness: 0.01 });
             const stripeMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
 
             const ringRoadGeo = new THREE.RingGeometry(36.5, 48, 64);
@@ -610,7 +709,7 @@
 
             const boardwalk = new THREE.Mesh(
                 new THREE.BoxGeometry(10, 0.3, 340),
-                new THREE.MeshStandardMaterial({ color: 0x473325, roughness: 0.8 })
+                new THREE.MeshStandardMaterial({ color: 0xb09a7c, map: concreteTexture, roughness: 0.9, metalness: 0.02 })
             );
             boardwalk.position.set(-63, 0.15, 0);
             boardwalk.receiveShadow = true;
@@ -627,11 +726,12 @@
             riverBumpTex = createWaterRippleTexture();
 
             riverMat = new THREE.MeshStandardMaterial({
-                color: 0x07243d,
-                roughness: 0.14,
-                metalness: 0.88,
+                color: 0x397b91,
+                roughness: 0.24,
+                metalness: 0.32,
+                envMapIntensity: 0.9,
                 bumpMap: riverBumpTex,
-                bumpScale: 0.22
+                bumpScale: 0.12
             });
             riverMesh = new THREE.Mesh(riverGeo, riverMat);
             riverMesh.rotation.x = -Math.PI / 2;
@@ -1051,21 +1151,26 @@
         // ==================== 陆家嘴天际线建筑群 ====================
         function buildLujiazuiSkyline() {
             const winTex = createWindowTexture();
+            facadeTexture = createSurfaceTexture('#7894a3', 0.045, 2, 10, 'rgba(20,42,54,0.34)');
             const glassMatCyan = new THREE.MeshStandardMaterial({
-                color: 0x1e3a8a,
-                emissive: 0x38bdf8,
+                color: 0xb4d0dc,
+                map: facadeTexture,
+                emissive: 0x183342,
                 emissiveMap: winTex,
-                emissiveIntensity: 0.75,
-                roughness: 0.15,
-                metalness: 0.85
+                emissiveIntensity: 0.12,
+                roughness: 0.27,
+                metalness: 0.62,
+                envMapIntensity: 1.15
             });
             const glassMatGold = new THREE.MeshStandardMaterial({
-                color: 0x1e293b,
-                emissive: 0xfbbf24,
+                color: 0xc6bca4,
+                map: facadeTexture,
+                emissive: 0x4a3920,
                 emissiveMap: winTex,
-                emissiveIntensity: 0.7,
-                roughness: 0.2,
-                metalness: 0.8
+                emissiveIntensity: 0.1,
+                roughness: 0.32,
+                metalness: 0.48,
+                envMapIntensity: 0.95
             });
             buildingWindowMats.push(glassMatCyan, glassMatGold);
 
@@ -2062,6 +2167,9 @@
             if (mode === 'night') {
                 scene.background = new THREE.Color(0x070b14);
                 scene.fog.color.setHex(0x070b14);
+                scene.fog.density = 0.0024;
+                ambientLight.color.setHex(0x334155);
+                ambientLight.intensity = 0.65;
                 hemiLight.color.setHex(0x6366f1);
                 hemiLight.intensity = 0.6;
                 dirLight.color.setHex(0x93c5fd);
@@ -2070,12 +2178,16 @@
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.85);
                 if (riverMat) {
                     riverMat.color.setHex(0x07243d);
-                    riverMat.roughness = 0.14;
-                    riverMat.bumpScale = 0.24;
+                    riverMat.roughness = 0.18;
+                    riverMat.metalness = 0.62;
+                    riverMat.bumpScale = 0.18;
                 }
             } else if (mode === 'sunset') {
                 scene.background = new THREE.Color(0x3b1d4a);
                 scene.fog.color.setHex(0x4c1d4b);
+                scene.fog.density = 0.0018;
+                ambientLight.color.setHex(0x334155);
+                ambientLight.intensity = 0.65;
                 hemiLight.color.setHex(0xf97316);
                 hemiLight.intensity = 0.88;
                 dirLight.color.setHex(0xfb923c);
@@ -2083,23 +2195,28 @@
                 pearlLights.forEach(l => l.intensity = 1.6);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.45);
                 if (riverMat) {
-                    riverMat.color.setHex(0x1b2845);
-                    riverMat.roughness = 0.18;
-                    riverMat.bumpScale = 0.22;
+                    riverMat.color.setHex(0x28465a);
+                    riverMat.roughness = 0.2;
+                    riverMat.metalness = 0.48;
+                    riverMat.bumpScale = 0.15;
                 }
             } else if (mode === 'day') {
-                scene.background = new THREE.Color(0x60a5fa);
-                scene.fog.color.setHex(0x93c5fd);
+                scene.background = daylightEnvironment || new THREE.Color(0x9bc8e6);
+                scene.fog.color.setHex(0xc5dce8);
+                scene.fog.density = 0.00105;
+                ambientLight.color.setHex(0xdce8ef);
+                ambientLight.intensity = 0.42;
                 hemiLight.color.setHex(0xe0f2fe);
-                hemiLight.intensity = 1.15;
-                dirLight.color.setHex(0xffffff);
-                dirLight.intensity = 2.1;
+                hemiLight.intensity = 1.05;
+                dirLight.color.setHex(0xfff3df);
+                dirLight.intensity = 2.35;
                 pearlLights.forEach(l => l.intensity = 0.3);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.08);
                 if (riverMat) {
-                    riverMat.color.setHex(0x0c4a6e);
-                    riverMat.roughness = 0.22;
-                    riverMat.bumpScale = 0.18;
+                    riverMat.color.setHex(0x397b91);
+                    riverMat.roughness = 0.26;
+                    riverMat.metalness = 0.28;
+                    riverMat.bumpScale = 0.12;
                 }
             }
         }
