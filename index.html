@@ -2167,6 +2167,9 @@
             if (mode === 'night') {
                 scene.background = new THREE.Color(0x070b14);
                 scene.fog.color.setHex(0x070b14);
+                scene.fog.density = 0.0024;
+                ambientLight.color.setHex(0x334155);
+                ambientLight.intensity = 0.65;
                 hemiLight.color.setHex(0x6366f1);
                 hemiLight.intensity = 0.6;
                 dirLight.color.setHex(0x93c5fd);
@@ -2182,6 +2185,9 @@
             } else if (mode === 'sunset') {
                 scene.background = new THREE.Color(0x3b1d4a);
                 scene.fog.color.setHex(0x4c1d4b);
+                scene.fog.density = 0.0018;
+                ambientLight.color.setHex(0x334155);
+                ambientLight.intensity = 0.65;
                 hemiLight.color.setHex(0xf97316);
                 hemiLight.intensity = 0.88;
                 dirLight.color.setHex(0xfb923c);
