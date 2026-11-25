@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>漫步陆家嘴 - 东方明珠 3D 城市探索</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #070b14;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #f4f7fb;
+  }
+  #canvas-wrap { position: fixed; inset: 0; width: 100%; height: 100%; }
+
+  .hud-top {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .panel {
+    pointer-events: auto;
+    background: rgba(12, 18, 32, 0.72);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .title-card { padding: 12px 16px; }
+  .title-card h1 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pearl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff5cc, #ff7eb6 65%, #7c5cff);
+    box-shadow: 0 0 10px #ff8ec7;
+  }
+  .title-card p {
+    font-size: 12px;
+    color: rgba(235, 242, 255, 0.75);
+    margin-top: 4px;
+  }
+
+  .controls-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+  }
+  button.btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.08);
+    color: #f4f7fb;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  button.btn:hover { background: rgba(255, 255, 255, 0.16); transform: translateY(-1px); }
+  button.btn.active {
+    background: linear-gradient(135deg, rgba(255, 118, 177, 0.32), rgba(112, 161, 255, 0.32));
+    border-color: rgba(255, 175, 214, 0.65);
+  }
+
+  .minimap-card {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    width: 166px;
+    padding: 10px;
+    z-index: 10;
+  }
+  .minimap-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: rgba(235, 242, 255, 0.78);
+    margin-bottom: 6px;
+  }
+  #minimap {
+    width: 146px;
+    height: 146px;
+    border-radius: 10px;
+    display: block;
+    background: rgba(7, 13, 25, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .bottom-right {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    z-index: 10;
+    max-width: 360px;
+  }
+  .landmark-card {
+    padding: 14px 16px;
+    width: 100%;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .landmark-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255, 138, 192, 0.2);
+    color: #ffc2de;
+    border: 1px solid rgba(255, 138, 192, 0.4);
+    margin-bottom: 6px;
+  }
+  .landmark-card h2 { font-size: 15px; margin-bottom: 5px; }
+  .landmark-card p { font-size: 12px; line-height: 1.55; color: rgba(235, 242, 255, 0.82); }
+
+  .help-card {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: rgba(235, 242, 255, 0.8);
+    line-height: 1.6;
+  }
+  .help-card kbd {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    padding: 1px 5px;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .toast {
+    position: fixed;
+    top: 82px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    padding: 9px 18px;
+    border-radius: 999px;
+    background: rgba(18, 28, 48, 0.88);
+    border: 1px solid rgba(255, 182, 219, 0.55);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 20;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 15, 0.72);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box {
+    max-width: 680px;
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+  }
+  .modal-box img {
+    width: 100%;
+    border-radius: 10px;
+    display: block;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+<div id="canvas-wrap"></div>
+
+<div class="hud-top">
+  <div class="panel title-card">
+    <h1><span class="pearl-dot"></span>漫步陆家嘴 · 东方明珠 3D 探索</h1>
+    <p id="status-line">已打卡地标：<span id="visited-count">0</span> / 5 · 探索值：<span id="score-val">0</span></p>
+  </div>
+
+  <div class="panel controls-bar">
+    <button class="btn active" id="mode-night">璀璨夜景</button>
+    <button class="btn" id="mode-sunset">陆家嘴黄昏</button>
+    <button class="btn" id="mode-day">晴朗白昼</button>
+    <button class="btn" id="cam-toggle">视角：第三人称</button>
+    <button class="btn" id="tp-pearl">传送明珠广场</button>
+    <button class="btn" id="photo-btn">拍照打卡</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="panel minimap-card">
+  <div class="minimap-header">
+    <span>陆家嘴雷达</span>
+    <span id="coord-text">X: 0, Z: 46</span>
+  </div>
+  <canvas id="minimap" width="146" height="146"></canvas>
+</div>
+
+<div class="bottom-right">
+  <div class="panel landmark-card" id="landmark-card">
+    <span class="landmark-badge" id="lm-badge">当前区域</span>
+    <h2 id="lm-title">东方明珠塔下广场</h2>
+    <p id="lm-desc">走近发光光柱可触发地标打卡。东方明珠广播电视塔高 468 米，以“大珠小珠落玉盘”为设计意象，是上海最具辨识度的城市地标。</p>
+  </div>
+  <div class="panel help-card">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / 方向键行走 · <kbd>Shift</kbd> 奔跑 · <kbd>Space</kbd> 跳跃 · 鼠标左键拖拽环顾
+  </div>
+</div>
+
+<div class="modal-backdrop" id="photo-modal">
+  <div class="panel modal-box">
+    <img id="photo-preview" alt="陆家嘴打卡明信片" />
+    <div class="modal-footer">
+      <span style="font-size:12px;opacity:0.8;">已生成陆家嘴城市探索明信片</span>
+      <div style="display:flex;gap:8px;">
+        <a id="photo-download" download="lujiazui-postcard.png" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;">下载明信片</a>
+        <button class="btn" id="photo-close">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+
+const container = document.getElementById('canvas-wrap');
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.2, 900);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+container.appendChild(renderer.domElement);
+
+// 天空穹顶着色器
+const skyUniforms = {
+  topColor: { value: new THREE.Color(0x070d1f) },
+  midColor: { value: new THREE.Color(0x162447) },
+  bottomColor: { value: new THREE.Color(0x281c3d) },
+  sunDir: { value: new THREE.Vector3(-0.5, 0.35, -0.7).normalize() },
+  sunColor: { value: new THREE.Color(0xff9ec4) }
+};
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  depthWrite: false,
+  uniforms: skyUniforms,
+  vertexShader: `
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 wp = modelMatrix * vec4(position, 1.0);
+      vWorldPos = wp.xyz;
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 topColor;
+    uniform vec3 midColor;
+    uniform vec3 bottomColor;
+    uniform vec3 sunDir;
+    uniform vec3 sunColor;
+    varying vec3 vWorldPos;
+    void main() {
+      vec3 dir = normalize(vWorldPos);
+      float h = clamp(dir.y, 0.0, 1.0);
+      vec3 col = mix(bottomColor, midColor, smoothstep(0.0, 0.28, h));
+      col = mix(col, topColor, smoothstep(0.28, 0.9, h));
+      float sunAmt = max(dot(dir, sunDir), 0.0);
+      col += sunColor * pow(sunAmt, 24.0) * 0.45;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `
+});
+const skyDome = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 24), skyMat);
+scene.add(skyDome);
+
+const fog = new THREE.FogExp2(0x101930, 0.0024);
+scene.fog = fog;
+
+// 光源系统
+const hemiLight = new THREE.HemisphereLight(0x9bb8ff, 0x2b2540, 0.9);
+scene.add(hemiLight);
+
+const dirLight = new THREE.DirectionalLight(0xffd7ba, 1.8);
+dirLight.position.set(-70, 95, -60);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(2048, 2048);
+dirLight.shadow.camera.near = 10;
+dirLight.shadow.camera.far = 280;
+const d = 110;
+dirLight.shadow.camera.left = -d;
+dirLight.shadow.camera.right = d;
+dirLight.shadow.camera.top = d;
+dirLight.shadow.camera.bottom = -d;
+scene.add(dirLight);
+
+// 地面、广场、道路与黄浦江
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x202738, roughness: 0.85, metalness: 0.1 });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(520, 520), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// 东方明珠中央广场
+const plazaMat = new THREE.MeshStandardMaterial({ color: 0x394359, roughness: 0.65, metalness: 0.2 });
+const plaza = new THREE.Mesh(new THREE.CircleGeometry(36, 48), plazaMat);
+plaza.rotation.x = -Math.PI / 2;
+plaza.position.set(0, 0.03, 0);
+plaza.receiveShadow = true;
+scene.add(plaza);
+
+// 广场同心装饰环
+const ringMat = new THREE.MeshBasicMaterial({ color: 0xff85c0 });
+const plazaRing = new THREE.Mesh(new THREE.RingGeometry(16.5, 17.2, 64), ringMat);
+plazaRing.rotation.x = -Math.PI / 2;
+plazaRing.position.set(0, 0.05, 0);
+scene.add(plazaRing);
+
+// 街道与人行横道
+const roadMat = new THREE.MeshStandardMaterial({ color: 0x171c28, roughness: 0.9 });
+function addRoad(x, z, w, l) {
+  const r = new THREE.Mesh(new THREE.PlaneGeometry(w, l), roadMat);
+  r.rotation.x = -Math.PI / 2;
+  r.position.set(x, 0.02, z);
+  r.receiveShadow = true;
+  scene.add(r);
+}
+addRoad(0, 52, 16, 42);   // 世纪大道延伸段
+addRoad(0, -52, 16, 42);  // 滨江向北延伸段
+addRoad(-54, 0, 44, 15);  // 丰和路/陆家嘴西路方向
+addRoad(54, 0, 44, 15);   // 银城中路方向
+
+// 斑马线
+const stripeMat = new THREE.MeshBasicMaterial({ color: 0xe6edf8 });
+for (let i = -5; i <= 5; i += 2) {
+  const s = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 3.6), stripeMat);
+  s.rotation.x = -Math.PI / 2;
+  s.position.set(i, 0.04, 34);
+  scene.add(s);
+}
+
+// 西侧黄浦江与对岸外滩剪影
+const riverMat = new THREE.MeshStandardMaterial({
+  color: 0x0b2545,
+  roughness: 0.22,
+  metalness: 0.78
+});
+const river = new THREE.Mesh(new THREE.PlaneGeometry(130, 520), riverMat);
+river.rotation.x = -Math.PI / 2;
+river.position.set(-145, -0.25, 0);
+scene.add(river);
+
+// 外滩历史建筑剪影（江对岸）
+const bundMat = new THREE.MeshStandardMaterial({ color: 0x2c3244, roughness: 0.75 });
+for (let z = -150; z <= 150; z += 26) {
+  const h = 18 + ((Math.abs(z) * 7) % 14);
+  const b = new THREE.Mesh(new THREE.BoxGeometry(22, h, 18), bundMat);
+  b.position.set(-225, h / 2, z);
+  scene.add(b);
+}
+
+// ==================== 东方明珠广播电视塔 ====================
+const pearlTower = new THREE.Group();
+scene.add(pearlTower);
+
+const towerSteelMat = new THREE.MeshStandardMaterial({ color: 0xd8dee9, metalness: 0.75, roughness: 0.28 });
+const darkAccentMat = new THREE.MeshStandardMaterial({ color: 0x3b4252, metalness: 0.6, roughness: 0.4 });
+const pearlSphereMat = new THREE.MeshStandardMaterial({
+  color: 0xffb3d9,
+  emissive: 0xff4fa3,
+  emissiveIntensity: 0.55,
+  roughness: 0.25,
+  metalness: 0.35
+});
+const neonRingMat = new THREE.MeshBasicMaterial({ color: 0x66e3ff });
+const lowerNeonMat = new THREE.MeshBasicMaterial({ color: 0xff7eb6 });
+
+// 基座与三根斜撑巨柱
+const basePedestal = new THREE.Mesh(new THREE.CylinderGeometry(11.5, 14, 4.5, 24), darkAccentMat);
+basePedestal.position.y = 2.25;
+basePedestal.castShadow = true;
+pearlTower.add(basePedestal);
+
+const legRadius = 6.2;
+for (let i = 0; i < 3; i++) {
+  const angle = (i * Math.PI * 2) / 3 + Math.PI / 6;
+  const legGroup = new THREE.Group();
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.55, 36, 16), towerSteelMat);
+  leg.position.y = 18;
+  leg.castShadow = true;
+  legGroup.add(leg);
+
+  legGroup.position.set(Math.cos(angle) * legRadius, 0, Math.sin(angle) * legRadius);
+  legGroup.rotation.z = -Math.cos(angle) * 0.145;
+  legGroup.rotation.x = Math.sin(angle) * 0.145;
+  pearlTower.add(legGroup);
+}
+
+// 中央主塔筒
+const coreShaft = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 3.2, 92, 24), towerSteelMat);
+coreShaft.position.y = 46;
+coreShaft.castShadow = true;
+pearlTower.add(coreShaft);
+
+// 下球体（约高 28m）
+const lowerSphere = new THREE.Mesh(new THREE.SphereGeometry(7.2, 32, 24), pearlSphereMat);
+lowerSphere.scale.set(1, 0.78, 1);
+lowerSphere.position.y = 28;
+lowerSphere.castShadow = true;
+pearlTower.add(lowerSphere);
+
+const lowerRing = new THREE.Mesh(new THREE.TorusGeometry(7.5, 0.22, 12, 48), lowerNeonMat);
+lowerRing.rotation.x = Math.PI / 2;
+lowerRing.position.y = 28;
+pearlTower.add(lowerRing);
+
+// 上球体（约高 66m）
+const upperSphere = new THREE.Mesh(new THREE.SphereGeometry(9.4, 36, 28), pearlSphereMat);
+upperSphere.scale.set(1, 0.82, 1);
+upperSphere.position.y = 66;
+upperSphere.castShadow = true;
+pearlTower.add(upperSphere);
+
+const upperRing1 = new THREE.Mesh(new THREE.TorusGeometry(9.8, 0.25, 12, 64), neonRingMat);
+upperRing1.rotation.x = Math.PI / 2;
+upperRing1.position.y = 66;
+pearlTower.add(upperRing1);
+
+const upperRing2 = new THREE.Mesh(new THREE.TorusGeometry(9.2, 0.18, 12, 64), lowerNeonMat);
+upperRing2.rotation.x = Math.PI / 2;
+upperRing2.position.y = 68.4;
+pearlTower.add(upperRing2);
+
+// 太空舱（约高 86m）
+const spaceCapsule = new THREE.Mesh(new THREE.SphereGeometry(3.8, 24, 18), towerSteelMat);
+spaceCapsule.scale.set(1, 0.9, 1);
+spaceCapsule.position.y = 86;
+pearlTower.add(spaceCapsule);
+
+// 顶部发射天线
+const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.85, 28, 16), towerSteelMat);
+spire.position.y = 104;
+pearlTower.add(spire);
+
+const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff4d6d });
+const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.65, 12, 12), beaconMat);
+beacon.position.y = 118.5;
+pearlTower.add(beacon);
+
+// ==================== 陆家嘴“三件套”与城市建筑群 ====================
+const glassMatA = new THREE.MeshStandardMaterial({ color: 0x6ea8fe, metalness: 0.82, roughness: 0.18 });
+const glassMatB = new THREE.MeshStandardMaterial({ color: 0x8093b8, metalness: 0.78, roughness: 0.22 });
+const buildingMat = new THREE.MeshStandardMaterial({ color: 0x28344f, metalness: 0.45, roughness: 0.55 });
+const windowGlowMat = new THREE.MeshBasicMaterial({ color: 0xffd27d });
+
+// 上海中心大厦（螺旋造型）
+const shanghaiTower = new THREE.Group();
+shanghaiTower.position.set(52, 0, -34);
+const twistSegments = 14;
+for (let i = 0; i < twistSegments; i++) {
+  const ratio = i / twistSegments;
+  const w = 13.5 * (1 - ratio * 0.42);
+  const segH = 8.2;
+  const seg = new THREE.Mesh(new THREE.BoxGeometry(w, segH - 0.15, w), glassMatA);
+  seg.position.y = i * segH + segH / 2;
+  seg.rotation.y = i * 0.14;
+  seg.castShadow = true;
+  shanghaiTower.add(seg);
+}
+scene.add(shanghaiTower);
+
+// 上海环球金融中心（顶部风洞/开瓶器造型）
+const swfc = new THREE.Group();
+swfc.position.set(66, 0, 14);
+const swfcBody = new THREE.Mesh(new THREE.BoxGeometry(12, 86, 12), glassMatB);
+swfcBody.position.y = 43;
+swfcBody.castShadow = true;
+swfc.add(swfcBody);
+
+const swfcLeft = new THREE.Mesh(new THREE.BoxGeometry(3.2, 14, 12.2), glassMatB);
+swfcLeft.position.set(-4.4, 93, 0);
+swfc.add(swfcLeft);
+
+const swfcRight = new THREE.Mesh(new THREE.BoxGeometry(3.2, 14, 12.2), glassMatB);
+swfcRight.position.set(4.4, 93, 0);
+swfc.add(swfcRight);
+
+const swfcTopBar = new THREE.Mesh(new THREE.BoxGeometry(12, 3, 12.2), glassMatB);
+swfcTopBar.position.set(0, 100.5, 0);
+swfc.add(swfcTopBar);
+scene.add(swfc);
+
+// 金茂大厦
+const jinmao = new THREE.Group();
+jinmao.position.set(34, 0, 26);
+for (let tier = 0; tier < 6; tier++) {
+  const r = 9.2 - tier * 1.1;
+  const h = 11.5;
+  const cyl = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.88, r, h, 8), towerSteelMat);
+  cyl.position.y = tier * h + h / 2;
+  cyl.castShadow = true;
+  jinmao.add(cyl);
+}
+scene.add(jinmao);
+
+// 周围街区楼宇与景观树
+const obstacles = [
+  { x: 0, z: 0, r: 12.5 }
+];
+
+function addCityBlock(x, z, w, d, h) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMat);
+  mesh.position.set(x, h / 2, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+
+  for (let y = 5; y < h - 4; y += 7) {
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(w + 0.15, 0.55, d + 0.15), windowGlowMat);
+    strip.position.set(x, y, z);
+    scene.add(strip);
+  }
+  obstacles.push({ x, z, r: Math.max(w, d) * 0.55 });
+}
+
+const blockCoords = [
+  [-32, -32, 16, 16, 34],
+  [-32, 32, 16, 16, 28],
+  [32, -32, 16, 16, 38],
+  [36, 48, 18, 16, 30],
+  [-56, 34, 18, 18, 24],
+  [-56, -34, 18, 18, 26],
+  [84, -18, 18, 20, 44],
+  [84, 24, 18, 20, 36]
+];
+blockCoords.forEach(([x, z, w, d, h]) => addCityBlock(x, z, w, d, h));
+
+// 行道树
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2d6a4f, roughness: 0.8 });
+const treePositions = [
+  [-12, 22], [12, 22], [-12, -22], [12, -22],
+  [-22, 11], [-22, -11], [22, 11], [22, -11],
+  [-10, 42], [10, 42], [-10, -42], [10, -42]
+];
+treePositions.forEach(([tx, tz]) => {
+  const g = new THREE.Group();
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.38, 2.4, 8), trunkMat);
+  trunk.position.y = 1.2;
+  trunk.castShadow = true;
+  const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(2.1, 1), foliageMat);
+  crown.position.y = 3.6;
+  crown.castShadow = true;
+  g.add(trunk, crown);
+  g.position.set(tx, 0, tz);
+  scene.add(g);
+});
+
+// ==================== 打卡地标与发光光柱 ====================
+const landmarks = [
+  {
+    id: 'pearl',
+    name: '东方明珠广播电视塔',
+    badge: '地标 01 · 核心地标',
+    x: 0,
+    z: 18,
+    desc: '塔高 468 米，集观光、餐饮、娱乐、都市历史陈列于一体。夜晚球体与霓虹光环亮起，是陆家嘴天际线的灵魂。'
+  },
+  {
+    id: 'shanghai-tower',
+    name: '上海中心大厦',
+    badge: '地标 02 · 超高层建筑',
+    x: 34,
+    z: -20,
+    desc: '建筑高度 632 米，采用独特的“龙型”螺旋上升外观与双层幕墙设计，减少风荷载并提升自然采光。'
+  },
+  {
+    id: 'swfc',
+    name: '上海环球金融中心',
+    badge: '地标 03 · 陆家嘴三件套',
+    x: 48,
+    z: 14,
+    desc: '顶部拥有标志性梯形风洞结构，高区观光天阁可俯瞰黄浦江两岸与密集摩天楼群。'
+  },
+  {
+    id: 'jinmao',
+    name: '金茂大厦',
+    badge: '地标 04 · 经典塔楼',
+    x: 22,
+    z: 24,
+    desc: '融合中国传统宝塔层叠韵律与现代钢结构技术，是陆家嘴早期崛起的标志性摩天大楼之一。'
+  },
+  {
+    id: 'bund-view',
+    name: '滨江观景台',
+    badge: '地标 05 · 江景视角',
+    x: -68,
+    z: 0,
+    desc: '面向黄浦江与外滩万国建筑博览群，这里是拍摄东方明珠与陆家嘴全景的绝佳观景点。'
+  }
+];
+
+const visitedSet = new Set();
+let score = 0;
+const beaconMeshes = [];
+
+landmarks.forEach((lm) => {
+  const beamMat = new THREE.MeshBasicMaterial({
+    color: 0x7ef9ff,
+    transparent: true,
+    opacity: 0.24,
+    side: THREE.DoubleSide,
+    depthWrite: false
+  });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 11, 20, 1, true), beamMat);
+  beam.position.set(lm.x, 5.5, lm.z);
+  scene.add(beam);
+
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(1.8, 2.25, 32),
+    new THREE.MeshBasicMaterial({ color: 0xff99cc, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(lm.x, 0.06, lm.z);
+  scene.add(ring);
+
+  beaconMeshes.push({ lm, beam, ring });
+});
+
+// ==================== 玩家角色模型 ====================
+const player = new THREE.Group();
+player.position.set(0, 0, 46);
+scene.add(player);
+
+const playerShirtMat = new THREE.MeshStandardMaterial({ color: 0x5c9eff, roughness: 0.5 });
+const playerPantsMat = new THREE.MeshStandardMaterial({ color: 0x23293a, roughness: 0.7 });
+const playerSkinMat = new THREE.MeshStandardMaterial({ color: 0xf5cba7, roughness: 0.6 });
+
+const torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.95, 0.42), playerShirtMat);
+torso.position.y = 1.25;
+torso.castShadow = true;
+player.add(torso);
+
+const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16), playerSkinMat);
+head.position.y = 2.08;
+head.castShadow = true;
+player.add(head);
+
+const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.34), playerPantsMat);
+leftLeg.position.set(-0.18, 0.4, 0);
+leftLeg.castShadow = true;
+player.add(leftLeg);
+
+const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.34), playerPantsMat);
+rightLeg.position.set(0.18, 0.4, 0);
+rightLeg.castShadow = true;
+player.add(rightLeg);
+
+// ==================== 控制与交互状态 ====================
+const keys = {};
+window.addEventListener('keydown', (e) => { keys[e.code] = true; });
+window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+let yaw = 0;
+let pitch = 0.24;
+let isDragging = false;
+let lastPointerX = 0;
+let lastPointerY = 0;
+let firstPerson = false;
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  isDragging = true;
+  lastPointerX = e.clientX;
+  lastPointerY = e.clientY;
+});
+window.addEventListener('pointermove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastPointerX;
+  const dy = e.clientY - lastPointerY;
+  lastPointerX = e.clientX;
+  lastPointerY = e.clientY;
+  yaw -= dx * 0.0055;
+  pitch = THREE.MathUtils.clamp(pitch + dy * 0.0045, -0.35, 0.95);
+});
+window.addEventListener('pointerup', () => { isDragging = false; });
+
+let velY = 0;
+let isGrounded = true;
+let walkCycle = 0;
+
+// 氛围切换
+const modes = {
+  night: {
+    top: 0x060b1a, mid: 0x152242, bottom: 0x2b193d,
+    sunColor: 0xff8ec7, fog: 0x0e162b, hemi: 0.85, dir: 1.5,
+    sphereEmissive: 0.65, windowIntensity: 1.0
+  },
+  sunset: {
+    top: 0x1b264f, mid: 0x9b4d6b, bottom: 0xff9e6d,
+    sunColor: 0xffb36b, fog: 0x4b384c, hemi: 1.15, dir: 2.2,
+    sphereEmissive: 0.35, windowIntensity: 0.75
+  },
+  day: {
+    top: 0x2b7de9, mid: 0x7cc4ff, bottom: 0xdcf1ff,
+    sunColor: 0xfff4d6, fog: 0x9fd2f7, hemi: 1.55, dir: 2.5,
+    sphereEmissive: 0.12, windowIntensity: 0.25
+  }
+};
+
+function setAtmosphere(modeKey) {
+  const m = modes[modeKey];
+  skyUniforms.topColor.value.setHex(m.top);
+  skyUniforms.midColor.value.setHex(m.mid);
+  skyUniforms.bottomColor.value.setHex(m.bottom);
+  skyUniforms.sunColor.value.setHex(m.sunColor);
+  fog.color.setHex(m.fog);
+  hemiLight.intensity = m.hemi;
+  dirLight.intensity = m.dir;
+  pearlSphereMat.emissiveIntensity = m.sphereEmissive;
+
+  ['night', 'sunset', 'day'].forEach((k) => {
+    document.getElementById(`mode-${k}`).classList.toggle('active', k === modeKey);
+  });
+}
+
+document.getElementById('mode-night').addEventListener('click', () => setAtmosphere('night'));
+document.getElementById('mode-sunset').addEventListener('click', () => setAtmosphere('sunset'));
+document.getElementById('mode-day').addEventListener('click', () => setAtmosphere('day'));
+
+const camToggleBtn = document.getElementById('cam-toggle');
+camToggleBtn.addEventListener('click', () => {
+  firstPerson = !firstPerson;
+  player.visible = !firstPerson;
+  camToggleBtn.textContent = firstPerson ? '视角：第一人称' : '视角：第三人称';
+  camToggleBtn.classList.toggle('active', firstPerson);
+});
+
+const toastEl = document.getElementById('toast');
+let toastTimer = null;
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+
+document.getElementById('tp-pearl').addEventListener('click', () => {
+  player.position.set(0, 0, 22);
+  velY = 0;
+  yaw = 0;
+  showToast('已传送至东方明珠广场');
+});
+
+// 拍照打卡生成明信片
+const photoModal = document.getElementById('photo-modal');
+const photoPreview = document.getElementById('photo-preview');
+const photoDownload = document.getElementById('photo-download');
+
+document.getElementById('photo-btn').addEventListener('click', () => {
+  renderer.render(scene, camera);
+  const srcCanvas = renderer.domElement;
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = srcCanvas.width;
+  outCanvas.height = srcCanvas.height;
+  const ctx = outCanvas.getContext('2d');
+  ctx.drawImage(srcCanvas, 0, 0);
+
+  const barH = Math.max(54, Math.round(outCanvas.height * 0.08));
+  ctx.fillStyle = 'rgba(10, 16, 30, 0.72)';
+  ctx.fillRect(0, outCanvas.height - barH, outCanvas.width, barH);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `600 ${Math.max(16, Math.round(barH * 0.36))}px sans-serif`;
+  ctx.fillText('上海 · 陆家嘴东方明珠探索打卡', 24, outCanvas.height - barH * 0.36);
+
+  const dataUrl = outCanvas.toDataURL('image/png');
+  photoPreview.src = dataUrl;
+  photoDownload.href = dataUrl;
+  photoModal.classList.add('open');
+});
+
+document.getElementById('photo-close').addEventListener('click', () => {
+  photoModal.classList.remove('open');
+});
+
+// ==================== 小地图绘制 ====================
+const minimapCanvas = document.getElementById('minimap');
+const mCtx = minimapCanvas.getContext('2d');
+
+function drawMinimap() {
+  const w = minimapCanvas.width;
+  const h = minimapCanvas.height;
+  const scale = 0.62;
+  const cx = w / 2;
+  const cz = h / 2;
+
+  mCtx.clearRect(0, 0, w, h);
+
+  mCtx.fillStyle = 'rgba(24, 92, 168, 0.45)';
+  mCtx.fillRect(0, 0, cx + (-80) * scale, h);
+
+  mCtx.fillStyle = '#ff7eb6';
+  mCtx.beginPath();
+  mCtx.arc(cx, cz, 5, 0, Math.PI * 2);
+  mCtx.fill();
+
+  landmarks.forEach((lm) => {
+    const px = cx + lm.x * scale;
+    const pz = cz + lm.z * scale;
+    mCtx.fillStyle = visitedSet.has(lm.id) ? '#6ef7b7' : '#7ef9ff';
+    mCtx.beginPath();
+    mCtx.arc(px, pz, 3.2, 0, Math.PI * 2);
+    mCtx.fill();
+  });
+
+  const ux = cx + player.position.x * scale;
+  const uz = cz + player.position.z * scale;
+  mCtx.save();
+  mCtx.translate(ux, uz);
+  mCtx.rotate(-yaw);
+  mCtx.fillStyle = '#ffd166';
+  mCtx.beginPath();
+  mCtx.moveTo(0, -6);
+  mCtx.lineTo(4.5, 5);
+  mCtx.lineTo(0, 2.5);
+  mCtx.lineTo(-4.5, 5);
+  mCtx.closePath();
+  mCtx.fill();
+  mCtx.restore();
+}
+
+// ==================== 主循环 ====================
+const clock = new THREE.Clock();
+const lmBadgeEl = document.getElementById('lm-badge');
+const lmTitleEl = document.getElementById('lm-title');
+const lmDescEl = document.getElementById('lm-desc');
+const visitedCountEl = document.getElementById('visited-count');
+const scoreValEl = document.getElementById('score-val');
+const coordTextEl = document.getElementById('coord-text');
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const elapsed = clock.getElapsedTime();
+
+  let moveForward = 0;
+  let moveRight = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) moveForward += 1;
+  if (keys['KeyS'] || keys['ArrowDown']) moveForward -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) moveRight += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) moveRight -= 1;
+
+  const speed = (keys['ShiftLeft'] || keys['ShiftRight']) ? 19 : 10.5;
+
+  if (moveForward !== 0 || moveRight !== 0) {
+    const forwardVec = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const rightVec = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const dirVec = new THREE.Vector3()
+      .addScaledVector(forwardVec, moveForward)
+      .addScaledVector(rightVec, moveRight)
+      .normalize();
+
+    const nextX = player.position.x + dirVec.x * speed * dt;
+    const nextZ = player.position.z + dirVec.z * speed * dt;
+
+    const clampedX = THREE.MathUtils.clamp(nextX, -76, 98);
+    const clampedZ = THREE.MathUtils.clamp(nextZ, -95, 95);
+
+    let blocked = false;
+    for (const obs of obstacles) {
+      const dx = clampedX - obs.x;
+      const dz = clampedZ - obs.z;
+      if (dx * dx + dz * dz < (obs.r + 0.65) * (obs.r + 0.65)) {
+        blocked = true;
+        break;
+      }
+    }
+    if (!blocked) {
+      player.position.x = clampedX;
+      player.position.z = clampedZ;
+    }
+
+    player.rotation.y = Math.atan2(dirVec.x, dirVec.z);
+    walkCycle += dt * speed * 1.1;
+    leftLeg.rotation.x = Math.sin(walkCycle) * 0.55;
+    rightLeg.rotation.x = -Math.sin(walkCycle) * 0.55;
+  } else {
+    leftLeg.rotation.x *= 0.8;
+    rightLeg.rotation.x *= 0.8;
+  }
+
+  if (keys['Space'] && isGrounded) {
+    velY = 8.2;
+    isGrounded = false;
+  }
+  velY -= 21 * dt;
+  player.position.y += velY * dt;
+  if (player.position.y <= 0) {
+    player.position.y = 0;
+    velY = 0;
+    isGrounded = true;
+  }
+
+  if (firstPerson) {
+    const eyePos = new THREE.Vector3(player.position.x, player.position.y + 2.05, player.position.z);
+    camera.position.copy(eyePos);
+    const lookTarget = new THREE.Vector3(
+      eyePos.x - Math.sin(yaw) * Math.cos(pitch) * 12,
+      eyePos.y + Math.sin(pitch) * 12,
+      eyePos.z - Math.cos(yaw) * Math.cos(pitch) * 12
+    );
+    camera.lookAt(lookTarget);
+  } else {
+    const dist = 9.5;
+    const horizDist = Math.cos(pitch) * dist;
+    const camX = player.position.x + Math.sin(yaw) * horizDist;
+    const camZ = player.position.z + Math.cos(yaw) * horizDist;
+    const camY = Math.max(1.2, player.position.y + 1.8 + Math.sin(pitch) * dist);
+    camera.position.lerp(new THREE.Vector3(camX, camY, camZ), 1 - Math.exp(-12 * dt));
+    camera.lookAt(player.position.x, player.position.y + 1.7, player.position.z);
+  }
+
+  upperRing1.rotation.z = elapsed * 0.35;
+  lowerRing.rotation.z = -elapsed * 0.25;
+
+  let nearest = null;
+  let nearestDist = Infinity;
+
+  for (const item of beaconMeshes) {
+    item.ring.rotation.z = elapsed * 0.8;
+    const dx = player.position.x - item.lm.x;
+    const dz = player.position.z - item.lm.z;
+    const dist = Math.hypot(dx, dz);
+
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = item.lm;
+    }
+
+    if (dist < 4.2 && !visitedSet.has(item.lm.id)) {
+      visitedSet.add(item.lm.id);
+      score += 100;
+      visitedCountEl.textContent = visitedSet.size;
+      scoreValEl.textContent = score;
+      item.beam.material.color.setHex(0x6ef7b7);
+      showToast(`打卡成功：${item.lm.name} (+100 探索值)`);
+    }
+  }
+
+  if (nearest && nearestDist < 26) {
+    lmBadgeEl.textContent = visitedSet.has(nearest.id) ? `${nearest.badge} · 已打卡` : nearest.badge;
+    lmTitleEl.textContent = nearest.name;
+    lmDescEl.textContent = nearest.desc;
+  }
+
+  coordTextEl.textContent = `X: ${Math.round(player.position.x)}, Z: ${Math.round(player.position.z)}`;
+  drawMinimap();
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+animate();
+</script>
+</body>
+</html>
