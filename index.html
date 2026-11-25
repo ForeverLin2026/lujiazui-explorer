@@ -1008,6 +1008,7 @@
 
             const upperSphere = new THREE.Mesh(new THREE.SphereGeometry(9.2, 36, 36), spherePinkMat);
             upperSphere.position.y = 122;
+            upperSphere.castShadow = true;
             pearlTowerGroup.add(upperSphere);
 
             const upperEquator = new THREE.Mesh(new THREE.TorusGeometry(9.5, 0.3, 12, 48), ringMagentaMat);
@@ -2516,9 +2517,10 @@
         }
 
         // ==================== 视角俯仰角更新辅助 ====================
-        // 第一人称模式下：向上滑动/拖动（deltaY < 0）使 pitch 增大（向上看）；向下滑动/拖动（deltaY > 0）使 pitch 减小（向下看）
+        // 第一人称：向上滑动/拖动（deltaY < 0）使 pitch 增大（向上看）；向下滑动/拖动（deltaY > 0）使 pitch 减小（向下看）
+        // 第三人称：保留原有拖动俯仰方向（deltaY > 0 时 pitch 增大，相机上移俯视角色；deltaY < 0 时 pitch 减小，相机下移仰望）
         function applyPitchDelta(deltaY) {
-            const pitchSign = state.cameraMode === 'first' ? -1 : -1;
+            const pitchSign = state.cameraMode === 'first' ? -1 : 1;
             state.camera.pitch = Math.max(
                 -0.85,
                 Math.min(0.95, state.camera.pitch + deltaY * 0.0055 * pitchSign)
