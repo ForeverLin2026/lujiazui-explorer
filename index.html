@@ -309,8 +309,8 @@
     <script>
         /**
          * 漫步陆家嘴 - 3D 城市探索游戏核心逻辑
-         * 包含：Three.js 场景搭建、东方明珠程序化建模、陆家嘴天际线、黄浦江游船、
-         * 角色骨骼动画、第一/第三人称相机控制、碰撞检测、地标打卡与小地图雷达。
+         * 包含：Three.js 场景搭建、东方明珠程序化建模、陆家嘴天际线、黄浦江波纹与游船、
+         * 真实比例与关节角色动画、第一/第三人称相机控制、碰撞检测、地标打卡与小地图雷达。
          */
 
         // ==================== 全局状态与配置 ====================
@@ -354,7 +354,8 @@
         let scene, camera, renderer, clock;
         let ambientLight, dirLight, hemiLight;
         let pearlTowerGroup, pearlLights = [], pearlRings = [];
-        let playerGroup, leftLeg, rightLeg, leftArm, rightArm, headGroup;
+        let playerGroup, bodyRig, leftLegPivot, rightLegPivot, leftArmPivot, rightArmPivot, headGroup;
+        let riverMesh, riverBasePositions, riverBumpTex, riverMat;
         let boats = [], streetLampBulbs = [], buildingWindowMats = [];
         let colliders = []; // 建筑物AABB碰撞箱
         let checkpointMeshes = [];
@@ -464,9 +465,42 @@
             scene.add(dirLight);
         }
 
+        // ==================== 生成水面波纹法线/凹凸纹理 ====================
+        function createWaterRippleTexture() {
+            const size = 256;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const img = ctx.createImageData(size, size);
+            const data = img.data;
+
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const u = (x / size) * Math.PI * 2;
+                    const v = (y / size) * Math.PI * 2;
+                    const h1 = Math.sin(u * 3 + v * 2);
+                    const h2 = Math.cos(u * 5 - v * 4 + 0.8);
+                    const h3 = Math.sin((u + v) * 7 - 1.4);
+                    const val = Math.floor(128 + ((h1 * 0.45 + h2 * 0.35 + h3 * 0.2) * 110));
+                    const idx = (y * size + x) * 4;
+                    data[idx] = val;
+                    data[idx + 1] = val;
+                    data[idx + 2] = val;
+                    data[idx + 3] = 255;
+                }
+            }
+            ctx.putImageData(img, 0, 0);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(28, 46);
+            return tex;
+        }
+
         // ==================== 地面、道路、广场与黄浦江 ====================
         function buildGroundAndRiver() {
-            // 陆地主地面（陆家嘴半岛区域 x > -68）
             const landGeo = new THREE.BoxGeometry(320, 2, 360);
             const landMat = new THREE.MeshStandardMaterial({
                 color: 0x1e2533,
@@ -478,7 +512,6 @@
             landMesh.receiveShadow = true;
             scene.add(landMesh);
 
-            // 东方明珠圆形中央广场铺装
             const plazaGeo = new THREE.CylinderGeometry(36, 36, 0.12, 64);
             const plazaMat = new THREE.MeshStandardMaterial({
                 color: 0x334155,
@@ -490,7 +523,6 @@
             plaza.receiveShadow = true;
             scene.add(plaza);
 
-            // 广场发光装饰圆环
             const ringGeo = new THREE.RingGeometry(28, 28.6, 64);
             const ringMat = new THREE.MeshBasicMaterial({ color: 0xec4899, side: THREE.DoubleSide });
             const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -498,30 +530,25 @@
             ring.position.set(0, 0.12, 0);
             scene.add(ring);
 
-            // 世纪大道与环岛道路网格
             const roadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
             const stripeMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
 
-            // 环岛主路
             const ringRoadGeo = new THREE.RingGeometry(36.5, 48, 64);
             const ringRoad = new THREE.Mesh(ringRoadGeo, roadMat);
             ringRoad.rotation.x = -Math.PI / 2;
             ringRoad.position.y = 0.03;
             scene.add(ringRoad);
 
-            // 南北向主干道（富城路 / 陆家嘴西路）
             const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(14, 280), roadMat);
             roadNS.rotation.x = -Math.PI / 2;
             roadNS.position.set(-42, 0.03, 0);
             scene.add(roadNS);
 
-            // 东西向世纪大道
             const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(220, 16), roadMat);
             roadEW.rotation.x = -Math.PI / 2;
             roadEW.position.set(70, 0.03, 45);
             scene.add(roadEW);
 
-            // 道路虚线标线
             for (let z = -120; z <= 120; z += 12) {
                 const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 5), stripeMat);
                 dash.rotation.x = -Math.PI / 2;
@@ -535,7 +562,6 @@
                 scene.add(dash);
             }
 
-            // 滨江大道木栈道与护栏 (x = -68)
             const boardwalk = new THREE.Mesh(
                 new THREE.BoxGeometry(10, 0.3, 340),
                 new THREE.MeshStandardMaterial({ color: 0x473325, roughness: 0.8 })
@@ -544,26 +570,30 @@
             boardwalk.receiveShadow = true;
             scene.add(boardwalk);
 
-            // 滨江白色安全护栏（带碰撞防止掉进江里）
             const railMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6, roughness: 0.3 });
             const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 340), railMat);
             topRail.position.set(-67.8, 0.65, 0);
             scene.add(topRail);
             colliders.push({ minX: -75, maxX: -67.5, minZ: -170, maxZ: 170 });
 
-            // 黄浦江水面 (x < -68)
-            const riverGeo = new THREE.PlaneGeometry(240, 420);
-            const riverMat = new THREE.MeshStandardMaterial({
-                color: 0x06182c,
-                roughness: 0.15,
-                metalness: 0.85
-            });
-            const river = new THREE.Mesh(riverGeo, riverMat);
-            river.rotation.x = -Math.PI / 2;
-            river.position.set(-188, -0.6, 0);
-            scene.add(river);
+            // 黄浦江水面 (x < -68) —— 高细分网格 + 真实水面波纹纹理与顶点起伏
+            const riverGeo = new THREE.PlaneGeometry(240, 420, 128, 160);
+            riverBasePositions = new Float32Array(riverGeo.attributes.position.array);
+            riverBumpTex = createWaterRippleTexture();
 
-            // 对岸外滩远景轮廓剪影（增强纵深感）
+            riverMat = new THREE.MeshStandardMaterial({
+                color: 0x07243d,
+                roughness: 0.14,
+                metalness: 0.88,
+                bumpMap: riverBumpTex,
+                bumpScale: 0.22
+            });
+            riverMesh = new THREE.Mesh(riverGeo, riverMat);
+            riverMesh.rotation.x = -Math.PI / 2;
+            riverMesh.position.set(-188, -0.55, 0);
+            riverMesh.receiveShadow = true;
+            scene.add(riverMesh);
+
             const bundGroup = new THREE.Group();
             const bundBuildingMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
             const bundGoldMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
@@ -574,49 +604,139 @@
                 b.position.set(-220, h / 2 - 0.5, z);
                 bundGroup.add(b);
 
-                // 外滩金色屋顶灯带
                 const trim = new THREE.Mesh(new THREE.BoxGeometry(14.3, 0.6, w + 0.3), bundGoldMat);
                 trim.position.set(-220, h - 0.5, z);
                 bundGroup.add(trim);
             }
             scene.add(bundGroup);
 
-            // 创建几艘在黄浦江航行的观光游船
             createRiverBoats();
         }
 
+        // ==================== 真实感黄浦江游船 ====================
         function createRiverBoats() {
-            const boatColors = [0xec4899, 0x06b6d4, 0xf59e0b];
+            const accentColors = [0xec4899, 0x06b6d4, 0xf59e0b];
+            const hullWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35, metalness: 0.25 });
+            const hullDarkMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4, metalness: 0.45 });
+            const deckWoodMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.75 });
+            const windowGlassMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                emissive: 0xfef08a,
+                emissiveIntensity: 0.45,
+                roughness: 0.1,
+                metalness: 0.9
+            });
+            const railMetalMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.25, metalness: 0.85 });
+            const wakeMat = new THREE.MeshBasicMaterial({
+                color: 0xe0f2fe,
+                transparent: true,
+                opacity: 0.35,
+                side: THREE.DoubleSide
+            });
+
             for (let i = 0; i < 3; i++) {
                 const boat = new THREE.Group();
-                // 船体
-                const hull = new THREE.Mesh(
-                    new THREE.BoxGeometry(5, 1.8, 16),
-                    new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 })
-                );
-                hull.position.y = 0.4;
-                boat.add(hull);
+                const dir = i % 2 === 0 ? 1 : -1;
+                const accentHex = accentColors[i];
+                const accentMat = new THREE.MeshBasicMaterial({ color: accentHex });
 
-                // 船舱
-                const cabin = new THREE.Mesh(
-                    new THREE.BoxGeometry(3.8, 1.6, 10),
-                    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2 })
-                );
-                cabin.position.y = 1.9;
+                const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(5.6, 1.3, 18), hullDarkMat);
+                lowerHull.position.y = 0.1;
+                lowerHull.castShadow = true;
+                boat.add(lowerHull);
+
+                const upperHull = new THREE.Mesh(new THREE.BoxGeometry(6.2, 1.4, 18.6), hullWhiteMat);
+                upperHull.position.y = 1.15;
+                upperHull.castShadow = true;
+                boat.add(upperHull);
+
+                const bowGeo = new THREE.ConeGeometry(3.12, 5.2, 4);
+                bowGeo.rotateX(Math.PI / 2);
+                bowGeo.rotateY(Math.PI / 4);
+                const bowMesh = new THREE.Mesh(bowGeo, hullWhiteMat);
+                bowMesh.scale.set(1, 0.46, 1);
+                bowMesh.position.set(0, 1.15, 11.8);
+                bowMesh.castShadow = true;
+                boat.add(bowMesh);
+
+                const sternGeo = new THREE.BoxGeometry(5.4, 1.5, 2.2);
+                const sternMesh = new THREE.Mesh(sternGeo, hullWhiteMat);
+                sternMesh.position.set(0, 1.2, -9.8);
+                boat.add(sternMesh);
+
+                const stripeL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.28, 18.7), accentMat);
+                stripeL.position.set(3.12, 1.2, 0);
+                boat.add(stripeL);
+                const stripeR = stripeL.clone();
+                stripeR.position.x = -3.12;
+                boat.add(stripeR);
+
+                const mainDeck = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.25, 16.5), deckWoodMat);
+                mainDeck.position.y = 1.95;
+                boat.add(mainDeck);
+
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(4.8, 2.1, 12.2), hullWhiteMat);
+                cabin.position.set(0, 3.1, -0.5);
+                cabin.castShadow = true;
                 boat.add(cabin);
 
-                // 游船霓虹灯条
-                const neon = new THREE.Mesh(
-                    new THREE.BoxGeometry(5.2, 0.35, 16.2),
-                    new THREE.MeshBasicMaterial({ color: boatColors[i] })
-                );
-                neon.position.y = 1.1;
-                boat.add(neon);
+                const cabinWindows = new THREE.Mesh(new THREE.BoxGeometry(4.94, 0.85, 11.2), windowGlassMat);
+                cabinWindows.position.set(0, 3.25, -0.5);
+                boat.add(cabinWindows);
 
-                const dir = i % 2 === 0 ? 1 : -1;
-                boat.position.set(-92 - i * 24, -0.5, (i - 1) * 90);
+                const upperDeck = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.25, 13.5), hullWhiteMat);
+                upperDeck.position.set(0, 4.25, -0.6);
+                boat.add(upperDeck);
+
+                const railSideGeo = new THREE.BoxGeometry(0.12, 0.75, 12.8);
+                const railL = new THREE.Mesh(railSideGeo, railMetalMat);
+                railL.position.set(2.45, 4.72, -0.8);
+                boat.add(railL);
+                const railR = railL.clone();
+                railR.position.x = -2.45;
+                boat.add(railR);
+
+                const bridge = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.6, 3.4), hullWhiteMat);
+                bridge.position.set(0, 5.15, 2.8);
+                boat.add(bridge);
+
+                const bridgeGlass = new THREE.Mesh(new THREE.BoxGeometry(3.92, 0.65, 2.6), windowGlassMat);
+                bridgeGlass.position.set(0, 5.3, 3.0);
+                boat.add(bridgeGlass);
+
+                const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.14, 3.2, 8), railMetalMat);
+                mast.position.set(0, 7.2, 2.4);
+                boat.add(mast);
+
+                const radarBar = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.16, 0.28), hullWhiteMat);
+                radarBar.position.set(0, 8.2, 2.4);
+                boat.add(radarBar);
+
+                const mastLight = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.18, 10, 10),
+                    new THREE.MeshBasicMaterial({ color: 0xffffff })
+                );
+                mastLight.position.set(0, 8.85, 2.4);
+                boat.add(mastLight);
+
+                const wakeGeo = new THREE.PlaneGeometry(4.4, 9.5);
+                wakeGeo.rotateX(-Math.PI / 2);
+                const wakeMesh = new THREE.Mesh(wakeGeo, wakeMat);
+                wakeMesh.position.set(0, 0.08, -14.5);
+                boat.add(wakeMesh);
+
+                if (dir < 0) {
+                    boat.rotation.y = Math.PI;
+                }
+
+                boat.position.set(-92 - i * 24, -0.45, (i - 1) * 90);
                 scene.add(boat);
-                boats.push({ mesh: boat, speed: (5 + i * 1.8) * dir });
+                boats.push({
+                    mesh: boat,
+                    speed: (5 + i * 1.8) * dir,
+                    baseY: -0.45,
+                    phase: i * 1.7
+                });
             }
         }
 
@@ -625,7 +745,6 @@
             pearlTowerGroup = new THREE.Group();
             pearlTowerGroup.position.set(0, 0, 0);
 
-            // 材质定义
             const concreteMat = new THREE.MeshStandardMaterial({
                 color: 0xdbeafe,
                 roughness: 0.45,
@@ -648,7 +767,6 @@
                 color: 0xf43f5e
             });
 
-            // 1. 底部基座大厅（三层圆形展厅）
             const baseHall1 = new THREE.Mesh(new THREE.CylinderGeometry(16, 18, 4, 32), concreteMat);
             baseHall1.position.y = 2;
             baseHall1.castShadow = true;
@@ -658,24 +776,20 @@
             baseHall2.position.y = 5.5;
             pearlTowerGroup.add(baseHall2);
 
-            // 添加基座碰撞箱
             colliders.push({ minX: -15, maxX: 15, minZ: -15, maxZ: 15 });
 
-            // 2. 标志性三根斜撑巨柱（120度均匀分布，向中心倾斜汇聚）
             for (let i = 0; i < 3; i++) {
                 const angle = (i * Math.PI * 2) / 3 + Math.PI / 6;
                 const legPivot = new THREE.Group();
                 legPivot.rotation.y = angle;
 
-                // 斜撑主柱
                 const legGeo = new THREE.CylinderGeometry(1.5, 2.3, 44, 20);
                 const legMesh = new THREE.Mesh(legGeo, concreteMat);
                 legMesh.position.set(10.5, 20, 0);
-                legMesh.rotation.z = 0.28; // 向内倾斜
+                legMesh.rotation.z = 0.28;
                 legMesh.castShadow = true;
                 legPivot.add(legMesh);
 
-                // 斜撑上的发光小装饰球
                 const smallSphere = new THREE.Mesh(new THREE.SphereGeometry(2.4, 24, 24), spherePinkMat);
                 smallSphere.position.set(11.8, 15, 0);
                 legPivot.add(smallSphere);
@@ -683,7 +797,6 @@
                 pearlTowerGroup.add(legPivot);
             }
 
-            // 3. 三根垂直主立柱（贯穿下球体与上球体）
             for (let i = 0; i < 3; i++) {
                 const angle = (i * Math.PI * 2) / 3 - Math.PI / 6;
                 const radius = 4.6;
@@ -694,7 +807,6 @@
                 pearlTowerGroup.add(colMesh);
             }
 
-            // 4. 水平连接环梁（增强结构细节）
             const beamHeights = [28, 56, 72, 88, 104];
             beamHeights.forEach((h, idx) => {
                 const beam = new THREE.Mesh(new THREE.TorusGeometry(4.8, 0.55, 12, 32), concreteMat);
@@ -702,7 +814,6 @@
                 beam.position.y = h;
                 pearlTowerGroup.add(beam);
 
-                // 霓虹光环
                 const lightRing = new THREE.Mesh(
                     new THREE.TorusGeometry(5.3, 0.18, 8, 36),
                     idx % 2 === 0 ? ringCyanMat : ringMagentaMat
@@ -713,20 +824,17 @@
                 pearlRings.push(lightRing);
             });
 
-            // 5. 下球体（直径最大的标志性主球体，y = 42）
             const lowerSphere = new THREE.Mesh(new THREE.SphereGeometry(12.5, 40, 40), spherePinkMat);
             lowerSphere.position.y = 42;
             lowerSphere.castShadow = true;
             pearlTowerGroup.add(lowerSphere);
 
-            // 下球体赤道发光环
             const lowerEquator = new THREE.Mesh(new THREE.TorusGeometry(12.8, 0.35, 12, 48), ringCyanMat);
             lowerEquator.rotation.x = Math.PI / 2;
             lowerEquator.position.y = 42;
             pearlTowerGroup.add(lowerEquator);
             pearlRings.push(lowerEquator);
 
-            // 6. 上球体（263米主观光层，y = 122）
             const upperSphere = new THREE.Mesh(new THREE.SphereGeometry(9.2, 36, 36), spherePinkMat);
             upperSphere.position.y = 122;
             pearlTowerGroup.add(upperSphere);
@@ -737,7 +845,6 @@
             pearlTowerGroup.add(upperEquator);
             pearlRings.push(upperEquator);
 
-            // 7. 太空舱小球体（350米太空舱，y = 148）
             const topColumn = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.2, 22, 20), concreteMat);
             topColumn.position.y = 138;
             pearlTowerGroup.add(topColumn);
@@ -746,7 +853,6 @@
             spaceCapsule.position.y = 150;
             pearlTowerGroup.add(spaceCapsule);
 
-            // 8. 发射天线塔尖（直插云霄至 y = 192）
             const spireBase = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.3, 18, 16), concreteMat);
             spireBase.position.y = 162;
             pearlTowerGroup.add(spireBase);
@@ -758,7 +864,6 @@
             spireTip.position.y = 181;
             pearlTowerGroup.add(spireTip);
 
-            // 塔尖航空障碍灯
             const beaconLight = new THREE.PointLight(0xff2a85, 2.5, 140);
             beaconLight.position.set(0, 45, 0);
             pearlTowerGroup.add(beaconLight);
@@ -774,7 +879,6 @@
 
         // ==================== 陆家嘴天际线建筑群 ====================
         function buildLujiazuiSkyline() {
-            // 创建玻璃幕墙发光窗户纹理
             const winTex = createWindowTexture();
             const glassMatCyan = new THREE.MeshStandardMaterial({
                 color: 0x1e3a8a,
@@ -794,7 +898,6 @@
             });
             buildingWindowMats.push(glassMatCyan, glassMatGold);
 
-            // 1. 上海中心大厦（632米，螺旋扭曲塔身）
             const shTower = new THREE.Group();
             shTower.position.set(78, 0, -45);
             const segments = 14;
@@ -804,14 +907,13 @@
                 const geo = new THREE.CylinderGeometry(13 * scale, 13.4 * scale, segHeight + 0.3, 6);
                 const mesh = new THREE.Mesh(geo, glassMatCyan);
                 mesh.position.y = i * segHeight + segHeight / 2;
-                mesh.rotation.y = i * 0.14; // 标志性螺旋扭转
+                mesh.rotation.y = i * 0.14;
                 mesh.castShadow = true;
                 shTower.add(mesh);
             }
             scene.add(shTower);
             colliders.push({ minX: 64, maxX: 92, minZ: -59, maxZ: -31 });
 
-            // 2. 上海环球金融中心（开瓶器造型）
             const swfc = new THREE.Group();
             swfc.position.set(76, 0, 16);
             const swfcBody = new THREE.Mesh(new THREE.BoxGeometry(20, 145, 20), glassMatCyan);
@@ -819,7 +921,6 @@
             swfcBody.castShadow = true;
             swfc.add(swfcBody);
 
-            // 顶部梯形“风洞/开瓶器”框架
             const leftPillar = new THREE.Mesh(new THREE.BoxGeometry(4, 32, 20), glassMatCyan);
             leftPillar.position.set(-8, 161, 0);
             swfc.add(leftPillar);
@@ -832,7 +933,6 @@
             scene.add(swfc);
             colliders.push({ minX: 65, maxX: 87, minZ: 5, maxZ: 27 });
 
-            // 3. 金茂大厦（宝塔式逐层内收结构）
             const jinmao = new THREE.Group();
             jinmao.position.set(46, 0, -14);
             const tiers = [
@@ -854,12 +954,11 @@
             scene.add(jinmao);
             colliders.push({ minX: 35, maxX: 57, minZ: -25, maxZ: -3 });
 
-            // 4. 周边现代金融写字楼群（正大广场、国金中心双子塔等）
             const extraBuildings = [
-                { x: -18, z: 74, w: 28, d: 22, h: 42, mat: glassMatGold },  // 正大广场方向
-                { x: 26, z: 76, w: 20, d: 20, h: 98, mat: glassMatCyan },   // 国金中心南塔
-                { x: 54, z: 76, w: 20, d: 20, h: 106, mat: glassMatCyan },  // 国金中心北塔
-                { x: -12, z: -72, w: 24, d: 22, h: 86, mat: glassMatCyan }, // 滨江金融大厦
+                { x: -18, z: 74, w: 28, d: 22, h: 42, mat: glassMatGold },
+                { x: 26, z: 76, w: 20, d: 20, h: 98, mat: glassMatCyan },
+                { x: 54, z: 76, w: 20, d: 20, h: 106, mat: glassMatCyan },
+                { x: -12, z: -72, w: 24, d: 22, h: 86, mat: glassMatCyan },
                 { x: 28, z: -76, w: 22, d: 22, h: 74, mat: glassMatGold },
                 { x: 115, z: -15, w: 24, d: 24, h: 92, mat: glassMatGold },
                 { x: 115, z: 32, w: 22, d: 26, h: 68, mat: glassMatCyan }
@@ -872,7 +971,6 @@
                 mesh.receiveShadow = true;
                 scene.add(mesh);
 
-                // 楼顶霓虹勾边
                 const roofTrim = new THREE.Mesh(
                     new THREE.BoxGeometry(b.w + 0.4, 0.8, b.d + 0.4),
                     new THREE.MeshBasicMaterial({ color: b.mat === glassMatCyan ? 0x06b6d4 : 0xf59e0b })
@@ -889,7 +987,6 @@
             });
         }
 
-        // 程序化生成摩天大楼发光玻璃幕墙纹理
         function createWindowTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 128;
@@ -914,24 +1011,20 @@
             return tex;
         }
 
-        // ==================== 街道景观：路灯、绿化树、长椅 ====================
+        // ==================== 街道景观：路灯、绿化树 ====================
         function buildStreetProps() {
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
             const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
             const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
             const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
 
-            // 沿滨江大道与广场外围种植行道树和路灯
             for (let z = -110; z <= 110; z += 22) {
-                // 滨江路灯
                 createStreetLamp(-56, z, poleMat, bulbMat);
-                // 滨江行道树
                 if (Math.abs(z - 10) > 10) {
                     createTree(-52, z + 8, trunkMat, leafMat);
                 }
             }
 
-            // 环岛周边路灯与绿化
             for (let i = 0; i < 12; i++) {
                 const angle = (i * Math.PI * 2) / 12;
                 const r = 34.5;
@@ -980,7 +1073,6 @@
                 const group = new THREE.Group();
                 group.position.copy(lm.pos);
 
-                // 地面光环
                 const ringGeo = new THREE.RingGeometry(2.6, 3.2, 32);
                 const ringMat = new THREE.MeshBasicMaterial({
                     color: 0xf59e0b,
@@ -993,7 +1085,6 @@
                 ring.position.y = 0.18;
                 group.add(ring);
 
-                // 悬浮菱形水晶图标
                 const gemGeo = new THREE.OctahedronGeometry(0.9, 0);
                 const gemMat = new THREE.MeshBasicMaterial({
                     color: 0xfbbf24,
@@ -1003,7 +1094,6 @@
                 gem.position.y = 2.6;
                 group.add(gem);
 
-                // 半透明光柱
                 const beamGeo = new THREE.CylinderGeometry(2.5, 2.5, 8, 24, 1, true);
                 const beamMat = new THREE.MeshBasicMaterial({
                     color: 0xf59e0b,
@@ -1020,53 +1110,149 @@
             });
         }
 
-        // ==================== 玩家 3D 角色模型 ====================
+        // ==================== 真实比例与关节层级 3D 角色模型 ====================
         function buildPlayerCharacter() {
             playerGroup = new THREE.Group();
             playerGroup.position.copy(state.player.pos);
 
-            const jacketMat = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.5 }); // 时尚洋红夹克
-            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
-            const skinMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.5 });
-            const hairMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+            bodyRig = new THREE.Group();
+            playerGroup.add(bodyRig);
 
-            // 躯干
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.25, 0.52), jacketMat);
-            torso.position.y = 1.65;
+            const jacketMat = new THREE.MeshStandardMaterial({ color: 0xe11d48, roughness: 0.52, metalness: 0.08 });
+            const jacketTrimMat = new THREE.MeshStandardMaterial({ color: 0xfda4af, roughness: 0.45, metalness: 0.15 });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.78, metalness: 0.05 });
+            const shoeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.45, metalness: 0.1 });
+            const soleMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xf5cba7, roughness: 0.55, metalness: 0.02 });
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.75, metalness: 0.1 });
+
+            const pelvis = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.45, 0.24, 16), pantsMat);
+            pelvis.position.y = 1.02;
+            pelvis.castShadow = true;
+            bodyRig.add(pelvis);
+
+            const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.41, 0.82, 18), jacketMat);
+            torso.scale.set(1.08, 1, 0.72);
+            torso.position.y = 1.55;
             torso.castShadow = true;
-            playerGroup.add(torso);
+            bodyRig.add(torso);
 
-            // 头部组合
+            const collar = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.065, 10, 20), jacketTrimMat);
+            collar.rotation.x = Math.PI / 2;
+            collar.position.set(0, 1.96, 0.02);
+            bodyRig.add(collar);
+
+            const hemTrim = new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.44, 0.08, 18), jacketTrimMat);
+            hemTrim.scale.set(1.09, 1, 0.73);
+            hemTrim.position.y = 1.16;
+            bodyRig.add(hemTrim);
+
+            const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.15, 0.18, 14), skinMat);
+            neck.position.y = 2.04;
+            bodyRig.add(neck);
+
             headGroup = new THREE.Group();
-            headGroup.position.y = 2.6;
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.68, 0.68), skinMat);
-            head.castShadow = true;
-            headGroup.add(head);
+            headGroup.position.set(0, 2.12, 0);
 
-            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.25, 0.72), hairMat);
-            hair.position.y = 0.28;
-            headGroup.add(hair);
-            playerGroup.add(headGroup);
+            const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.34, 22, 20), skinMat);
+            cranium.scale.set(0.92, 1.08, 0.98);
+            cranium.position.y = 0.34;
+            cranium.castShadow = true;
+            headGroup.add(cranium);
 
-            // 左臂与右臂
-            const armGeo = new THREE.BoxGeometry(0.32, 1.05, 0.34);
-            leftArm = new THREE.Mesh(armGeo, jacketMat);
-            leftArm.position.set(-0.68, 1.7, 0);
-            playerGroup.add(leftArm);
+            const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.355, 22, 18, 0, Math.PI * 2, 0, Math.PI * 0.62), hairMat);
+            hairCap.scale.set(0.95, 1.08, 1.04);
+            hairCap.position.set(0, 0.36, -0.02);
+            hairCap.rotation.x = -0.15;
+            headGroup.add(hairCap);
 
-            rightArm = new THREE.Mesh(armGeo, jacketMat);
-            rightArm.position.set(0.68, 1.7, 0);
-            playerGroup.add(rightArm);
+            const earGeo = new THREE.SphereGeometry(0.075, 10, 10);
+            const leftEar = new THREE.Mesh(earGeo, skinMat);
+            leftEar.scale.set(0.5, 1.1, 0.8);
+            leftEar.position.set(-0.31, 0.33, 0);
+            headGroup.add(leftEar);
 
-            // 左腿与右腿
-            const legGeo = new THREE.BoxGeometry(0.38, 1.05, 0.4);
-            leftLeg = new THREE.Mesh(legGeo, pantsMat);
-            leftLeg.position.set(-0.26, 0.52, 0);
-            playerGroup.add(leftLeg);
+            const rightEar = leftEar.clone();
+            rightEar.position.x = 0.31;
+            headGroup.add(rightEar);
 
-            rightLeg = new THREE.Mesh(legGeo, pantsMat);
-            rightLeg.position.set(0.26, 0.52, 0);
-            playerGroup.add(rightLeg);
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+            const eyeGeo = new THREE.SphereGeometry(0.036, 8, 8);
+            const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+            leftEye.position.set(-0.11, 0.35, 0.31);
+            headGroup.add(leftEye);
+
+            const rightEye = leftEye.clone();
+            rightEye.position.x = 0.11;
+            headGroup.add(rightEye);
+
+            bodyRig.add(headGroup);
+
+            function createArm(side) {
+                const pivot = new THREE.Group();
+                pivot.position.set(side * 0.56, 1.88, 0);
+
+                const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.15, 14, 14), jacketMat);
+                shoulder.castShadow = true;
+                pivot.add(shoulder);
+
+                const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.135, 0.115, 0.44, 14), jacketMat);
+                upperArm.position.y = -0.22;
+                upperArm.castShadow = true;
+                pivot.add(upperArm);
+
+                const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.118, 0.115, 0.06, 14), jacketTrimMat);
+                cuff.position.y = -0.43;
+                pivot.add(cuff);
+
+                const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.085, 0.34, 12), skinMat);
+                forearm.position.set(0, -0.61, 0.04);
+                forearm.rotation.x = -0.18;
+                pivot.add(forearm);
+
+                const hand = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 12), skinMat);
+                hand.scale.set(0.85, 1.15, 1.05);
+                hand.position.set(0, -0.78, 0.07);
+                pivot.add(hand);
+
+                return pivot;
+            }
+
+            leftArmPivot = createArm(-1);
+            rightArmPivot = createArm(1);
+            bodyRig.add(leftArmPivot);
+            bodyRig.add(rightArmPivot);
+
+            function createLeg(side) {
+                const pivot = new THREE.Group();
+                pivot.position.set(side * 0.21, 0.96, 0);
+
+                const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.145, 0.46, 14), pantsMat);
+                thigh.position.y = -0.23;
+                thigh.castShadow = true;
+                pivot.add(thigh);
+
+                const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.115, 0.42, 14), pantsMat);
+                shin.position.y = -0.65;
+                shin.castShadow = true;
+                pivot.add(shin);
+
+                const shoeUpper = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, 0.38), shoeMat);
+                shoeUpper.position.set(0, -0.88, 0.05);
+                shoeUpper.castShadow = true;
+                pivot.add(shoeUpper);
+
+                const shoeSole = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.04, 0.4), soleMat);
+                shoeSole.position.set(0, -0.94, 0.05);
+                pivot.add(shoeSole);
+
+                return pivot;
+            }
+
+            leftLegPivot = createLeg(-1);
+            rightLegPivot = createLeg(1);
+            bodyRig.add(leftLegPivot);
+            bodyRig.add(rightLegPivot);
 
             scene.add(playerGroup);
         }
@@ -1075,7 +1261,6 @@
         function applyTimeTheme(mode) {
             state.timeMode = mode;
 
-            // 更新按钮高亮
             document.querySelectorAll('.time-btn').forEach(btn => {
                 if (btn.dataset.time === mode) {
                     btn.classList.add('bg-pink-600', 'text-white');
@@ -1095,6 +1280,11 @@
                 dirLight.intensity = 0.65;
                 pearlLights.forEach(l => l.intensity = 2.8);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.85);
+                if (riverMat) {
+                    riverMat.color.setHex(0x07243d);
+                    riverMat.roughness = 0.14;
+                    riverMat.bumpScale = 0.24;
+                }
             } else if (mode === 'sunset') {
                 scene.background = new THREE.Color(0x3b1d4a);
                 scene.fog.color.setHex(0x4c1d4b);
@@ -1104,6 +1294,11 @@
                 dirLight.intensity = 1.65;
                 pearlLights.forEach(l => l.intensity = 1.6);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.45);
+                if (riverMat) {
+                    riverMat.color.setHex(0x1b2845);
+                    riverMat.roughness = 0.18;
+                    riverMat.bumpScale = 0.22;
+                }
             } else if (mode === 'day') {
                 scene.background = new THREE.Color(0x60a5fa);
                 scene.fog.color.setHex(0x93c5fd);
@@ -1113,11 +1308,16 @@
                 dirLight.intensity = 2.0;
                 pearlLights.forEach(l => l.intensity = 0.3);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.08);
+                if (riverMat) {
+                    riverMat.color.setHex(0x0c4a6e);
+                    riverMat.roughness = 0.22;
+                    riverMat.bumpScale = 0.18;
+                }
             }
         }
 
-        // ==================== 玩家移动与碰撞检测 ====================
-        function updatePlayer(dt) {
+        // ==================== 玩家移动、真实步态动画与碰撞检测 ====================
+        function updatePlayer(dt, elapsed = 0) {
             if (!state.started) return;
 
             const p = state.player;
@@ -1129,13 +1329,11 @@
             if (state.keys.d || state.keys.ArrowRight) moveRight += 1;
             if (state.keys.a || state.keys.ArrowLeft) moveRight -= 1;
 
-            // 合并虚拟摇杆输入
             if (state.joystick.active) {
                 moveRight += state.joystick.dx;
                 moveForward -= state.joystick.dy;
             }
 
-            // 归一化输入向量
             const inputLen = Math.hypot(moveForward, moveRight);
             if (inputLen > 1) {
                 moveForward /= inputLen;
@@ -1148,7 +1346,6 @@
             const speed = p.isSprinting ? 22 : 12;
 
             if (p.isMoving) {
-                // 基于当前相机朝向计算水平移动方向
                 const camYaw = state.camera.yaw;
                 const forwardDir = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
                 const rightDir = new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw));
@@ -1161,7 +1358,6 @@
                 const nextX = p.pos.x + moveVec.x * speed * dt;
                 const nextZ = p.pos.z + moveVec.z * speed * dt;
 
-                // 分轴进行碰撞检测，允许贴墙顺滑滑动
                 if (!checkCollision(nextX, p.pos.z)) {
                     p.pos.x = nextX;
                 }
@@ -1169,7 +1365,6 @@
                     p.pos.z = nextZ;
                 }
 
-                // 角色朝向平滑转向移动方向
                 const targetYaw = Math.atan2(moveVec.x, moveVec.z);
                 let diff = targetYaw - p.yaw;
                 while (diff < -Math.PI) diff += Math.PI * 2;
@@ -1177,7 +1372,6 @@
                 p.yaw += diff * Math.min(1, dt * 12);
             }
 
-            // 跳跃与重力
             if (state.keys.Space && p.onGround) {
                 p.vel.y = 11.5;
                 p.onGround = false;
@@ -1191,30 +1385,47 @@
                 p.onGround = true;
             }
 
-            // 同步角色模型位置与摆臂动画
             playerGroup.position.copy(p.pos);
             playerGroup.rotation.y = p.yaw;
 
             if (p.isMoving && p.onGround) {
-                p.walkCycle += dt * (p.isSprinting ? 14 : 9);
-                const swing = Math.sin(p.walkCycle) * 0.65;
-                leftLeg.rotation.x = swing;
-                rightLeg.rotation.x = -swing;
-                leftArm.rotation.x = -swing * 0.8;
-                rightArm.rotation.x = swing * 0.8;
+                const freq = p.isSprinting ? 14.5 : 9.2;
+                const amp = p.isSprinting ? 0.92 : 0.62;
+                p.walkCycle += dt * freq;
+
+                const s = Math.sin(p.walkCycle);
+                const c = Math.cos(p.walkCycle);
+
+                leftLegPivot.rotation.x = s * amp;
+                rightLegPivot.rotation.x = -s * amp;
+
+                leftArmPivot.rotation.x = -s * amp * 0.78;
+                rightArmPivot.rotation.x = s * amp * 0.78;
+                leftArmPivot.rotation.z = 0.08 + Math.max(0, -s) * 0.08;
+                rightArmPivot.rotation.z = -0.08 - Math.max(0, s) * 0.08;
+
+                bodyRig.position.y = Math.abs(c) * (p.isSprinting ? 0.14 : 0.07);
+                bodyRig.rotation.x = p.isSprinting ? 0.16 : 0.04;
+                bodyRig.rotation.y = s * 0.12;
+                headGroup.rotation.y = -s * 0.08;
             } else {
-                leftLeg.rotation.x *= 0.85;
-                rightLeg.rotation.x *= 0.85;
-                leftArm.rotation.x *= 0.85;
-                rightArm.rotation.x *= 0.85;
+                leftLegPivot.rotation.x *= 0.84;
+                rightLegPivot.rotation.x *= 0.84;
+                leftArmPivot.rotation.x *= 0.84;
+                rightArmPivot.rotation.x *= 0.84;
+                leftArmPivot.rotation.z += (0.1 - leftArmPivot.rotation.z) * 0.15;
+                rightArmPivot.rotation.z += (-0.1 - rightArmPivot.rotation.z) * 0.15;
+
+                bodyRig.rotation.x += (0 - bodyRig.rotation.x) * 0.15;
+                bodyRig.rotation.y *= 0.85;
+                bodyRig.position.y = Math.sin(elapsed * 2.2) * 0.02;
+                headGroup.rotation.y = Math.sin(elapsed * 0.9) * 0.12;
             }
 
-            // 第一人称下隐藏自身角色模型以免遮挡视线
             playerGroup.visible = state.cameraMode === 'third';
         }
 
         function checkCollision(x, z) {
-            // 世界边界限制
             if (x < -67.2 || x > 140 || z < -130 || z > 130) return true;
 
             for (let i = 0; i < colliders.length; i++) {
@@ -1232,8 +1443,7 @@
             const c = state.camera;
 
             if (state.cameraMode === 'first') {
-                // 第一人称视角：眼睛高度
-                const eyePos = new THREE.Vector3(p.x, p.y + 2.55, p.z);
+                const eyePos = new THREE.Vector3(p.x, p.y + 2.45, p.z);
                 camera.position.copy(eyePos);
 
                 const lookDir = new THREE.Vector3(
@@ -1243,8 +1453,7 @@
                 );
                 camera.lookAt(eyePos.clone().add(lookDir));
             } else {
-                // 第三人称环绕跟随视角
-                const target = new THREE.Vector3(p.x, p.y + 2.3, p.z);
+                const target = new THREE.Vector3(p.x, p.y + 2.1, p.z);
                 const offsetX = Math.sin(c.yaw) * Math.cos(c.pitch) * c.distance;
                 const offsetY = Math.sin(c.pitch) * c.distance;
                 const offsetZ = Math.cos(c.yaw) * Math.cos(c.pitch) * c.distance;
@@ -1259,9 +1468,28 @@
             }
         }
 
-        // ==================== 景点打卡检测与动态特效 ====================
+        // ==================== 真实水面波纹、游船与地标动画 ====================
         function updateWorldAnimations(elapsed, dt) {
-            // 1. 东方明珠霓虹光环动态呼吸与色彩流转
+            if (riverMesh && riverBasePositions) {
+                const posAttr = riverMesh.geometry.attributes.position;
+                const arr = posAttr.array;
+                for (let i = 0; i < arr.length; i += 3) {
+                    const bx = riverBasePositions[i];
+                    const by = riverBasePositions[i + 1];
+                    const wave1 = Math.sin(bx * 0.085 + elapsed * 1.9) * Math.cos(by * 0.065 + elapsed * 1.4) * 0.28;
+                    const wave2 = Math.sin((bx * 0.16 - by * 0.12) + elapsed * 2.8) * 0.12;
+                    const ripple = Math.cos(by * 0.34 - elapsed * 3.6 + bx * 0.05) * 0.05;
+                    arr[i + 2] = riverBasePositions[i + 2] + wave1 + wave2 + ripple;
+                }
+                posAttr.needsUpdate = true;
+                riverMesh.geometry.computeVertexNormals();
+            }
+
+            if (riverBumpTex) {
+                riverBumpTex.offset.y = -(elapsed * 0.06) % 1;
+                riverBumpTex.offset.x = Math.sin(elapsed * 0.25) * 0.04;
+            }
+
             pearlRings.forEach((ring, i) => {
                 ring.rotation.z = elapsed * (i % 2 === 0 ? 0.5 : -0.5);
             });
@@ -1270,14 +1498,17 @@
                 pearlLights[0].color.setHSL(hue, 0.9, 0.55);
             }
 
-            // 2. 黄浦江游船航行循环
             boats.forEach(b => {
                 b.mesh.position.z += b.speed * dt;
                 if (b.mesh.position.z > 170) b.mesh.position.z = -170;
                 if (b.mesh.position.z < -170) b.mesh.position.z = 170;
+
+                const bob = Math.sin(elapsed * 2.1 + b.phase) * 0.16;
+                b.mesh.position.y = b.baseY + bob;
+                b.mesh.rotation.z = Math.sin(elapsed * 1.7 + b.phase) * 0.032;
+                b.mesh.rotation.x = Math.cos(elapsed * 2.3 + b.phase) * 0.018;
             });
 
-            // 3. 打卡光柱旋转与距离触发检测
             let nearAnyLandmark = null;
             checkpointMeshes.forEach(cp => {
                 cp.gem.rotation.y = elapsed * 2;
@@ -1313,7 +1544,6 @@
                 document.getElementById('score-display').textContent = state.score;
                 document.getElementById('landmark-badge').textContent = `✨ 解锁新地标 (+${lm.points} 积分)`;
 
-                // 已打卡光柱变为翠绿色
                 const cpObj = checkpointMeshes.find(c => c.id === lm.id);
                 if (cpObj) {
                     cpObj.ring.material.color.setHex(0x10b981);
@@ -1345,11 +1575,10 @@
             const h = canvas.height;
             const cx = w / 2;
             const cy = h / 2;
-            const scale = 0.62; // 世界坐标缩放比例
+            const scale = 0.62;
 
             ctx.clearRect(0, 0, w, h);
 
-            // 背景与黄浦江水域
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, w, h);
 
@@ -1359,7 +1588,6 @@
                 ctx.fillRect(0, 0, Math.min(w, riverEdgeX), h);
             }
 
-            // 绘制地标打卡点
             LANDMARKS.forEach(lm => {
                 const mx = cx + (lm.pos.x - state.player.pos.x) * scale;
                 const my = cy + (lm.pos.z - state.player.pos.z) * scale;
@@ -1371,7 +1599,6 @@
                 }
             });
 
-            // 绘制东方明珠塔位置
             const pearlX = cx + (0 - state.player.pos.x) * scale;
             const pearlY = cy + (0 - state.player.pos.z) * scale;
             ctx.beginPath();
@@ -1382,7 +1609,6 @@
             ctx.lineWidth = 1.2;
             ctx.stroke();
 
-            // 绘制中心玩家箭头
             ctx.save();
             ctx.translate(cx, cy);
             ctx.rotate(-state.camera.yaw);
@@ -1399,14 +1625,12 @@
 
         // ==================== 事件监听绑定 ====================
         function bindEvents() {
-            // 开始游戏按钮
             document.getElementById('start-btn').addEventListener('click', () => {
                 state.started = true;
                 document.getElementById('start-modal').classList.add('hidden');
                 document.getElementById('game-hud').classList.remove('hidden');
             });
 
-            // 键盘按键监听
             window.addEventListener('keydown', (e) => {
                 if (e.code === 'Space') state.keys.Space = true;
                 if (e.key === 'Shift') state.keys.Shift = true;
@@ -1429,7 +1653,6 @@
                 if (e.key in state.keys) state.keys[e.key] = false;
             });
 
-            // 鼠标/触摸旋转视角
             const dom = renderer.domElement;
             dom.addEventListener('mousedown', (e) => {
                 state.camera.isDragging = true;
@@ -1452,14 +1675,12 @@
                 state.camera.isDragging = false;
             });
 
-            // 滚轮缩放第三人称视距
             dom.addEventListener('wheel', (e) => {
                 if (state.cameraMode === 'third') {
                     state.camera.distance = Math.max(5, Math.min(26, state.camera.distance + e.deltaY * 0.01));
                 }
             }, { passive: true });
 
-            // 触摸滑动旋转视角（右侧屏幕）
             let touchLookId = null;
             dom.addEventListener('touchstart', (e) => {
                 for (let t of e.changedTouches) {
@@ -1490,7 +1711,6 @@
                 }
             });
 
-            // 虚拟摇杆逻辑
             const joyZone = document.getElementById('joystick-zone');
             const joyStick = document.getElementById('joystick-stick');
             joyZone.addEventListener('touchstart', (e) => {
@@ -1528,7 +1748,6 @@
                 state.joystick.dy = dy / maxR;
             }
 
-            // 移动端跳跃与冲刺按钮
             const mJump = document.getElementById('mobile-jump-btn');
             mJump.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.Space = true; });
             mJump.addEventListener('touchend', () => { state.keys.Space = false; });
@@ -1537,19 +1756,16 @@
             mSprint.addEventListener('touchstart', (e) => { e.preventDefault(); state.keys.Shift = true; });
             mSprint.addEventListener('touchend', () => { state.keys.Shift = false; });
 
-            // 时间切换按钮
             document.querySelectorAll('.time-btn').forEach(btn => {
                 btn.addEventListener('click', () => applyTimeTheme(btn.dataset.time));
             });
 
-            // 视角切换按钮
             document.getElementById('toggle-camera-btn').addEventListener('click', () => {
                 state.cameraMode = state.cameraMode === 'third' ? 'first' : 'third';
                 document.getElementById('camera-mode-text').textContent =
                     state.cameraMode === 'third' ? '第三人称' : '第一人称';
             });
 
-            // 快捷传送
             document.getElementById('teleport-pearl-btn').addEventListener('click', () => {
                 state.player.pos.set(0, 0, 32);
                 state.camera.yaw = 0;
@@ -1559,10 +1775,8 @@
                 state.camera.yaw = -Math.PI / 2.4;
             });
 
-            // 关闭地标卡片
             document.getElementById('close-landmark-btn').addEventListener('click', hideLandmarkCard);
 
-            // 拍照模式控制
             document.getElementById('photo-mode-btn').addEventListener('click', () => {
                 state.photoMode = true;
                 document.getElementById('game-hud').classList.add('hidden');
@@ -1576,12 +1790,10 @@
             });
 
             document.getElementById('shutter-btn').addEventListener('click', () => {
-                // 闪光动画
                 const flash = document.getElementById('flash-overlay');
                 flash.style.opacity = '0.85';
                 setTimeout(() => { flash.style.opacity = '0'; }, 120);
 
-                // 渲染当前帧并生成图片
                 renderer.render(scene, camera);
                 const dataUrl = renderer.domElement.toDataURL('image/png');
                 document.getElementById('captured-image').src = dataUrl;
@@ -1598,7 +1810,6 @@
                 previewModal.classList.remove('flex');
             });
 
-            // 窗口自适应
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -1613,7 +1824,7 @@
             const dt = Math.min(clock.getDelta(), 0.1);
             const elapsed = clock.getElapsedTime();
 
-            updatePlayer(dt);
+            updatePlayer(dt, elapsed);
             updateCamera();
             updateWorldAnimations(elapsed, dt);
 
@@ -1624,7 +1835,6 @@
             renderer.render(scene, camera);
         }
 
-        // 窗口加载完成后启动
         window.onload = function () {
             init();
             animate();
