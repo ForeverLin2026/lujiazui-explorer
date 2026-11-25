@@ -1849,7 +1849,6 @@
                 fr.mesh.material.opacity = Math.max(0.08, (1 - cycle / 2) * 0.6);
             });
 
-            // 能量球旋转浮动与收集检测
             energyOrbs.forEach(orb => {
                 if (orb.collected) return;
                 orb.group.position.y = orb.baseY + Math.sin(elapsed * 2.6 + orb.phase) * 0.24;
