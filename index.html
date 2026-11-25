@@ -324,11 +324,6 @@
     <script>
         /**
          * 漫步陆家嘴 - 3D 城市探索游戏核心逻辑
-         * 包含：Three.js 场景搭建、东方明珠程序化建模、陆家嘴天际线、黄浦江波纹与游船、
-         * 陆家嘴中心绿地喷泉花坛、东昌路轮渡码头与长椅凉亭、高细节 Tesla 车型（Model 3/Y 流线车体、
-         * Panorama 全景玻璃车顶、隐藏式门把手、双鹰翼/矩阵灯组、旋转轮毂）、
-         * 高写实解剖比例与关节动作角色（肩颈胸腰骨盆、双段肘膝关节、五官与发丝层次、背包/手表细节、
-         * 呼吸/步态/摆臂/奔跑前倾与跳跃姿态）、可收集能量球、地标打卡与小地图雷达。
          */
 
         // ==================== 全局状态与配置 ====================
@@ -627,7 +622,6 @@
             scene.add(topRail);
             colliders.push({ minX: -75, maxX: -67.5, minZ: -170, maxZ: 170 });
 
-            // 黄浦江水面
             const riverGeo = new THREE.PlaneGeometry(240, 420, 128, 160);
             riverBasePositions = new Float32Array(riverGeo.attributes.position.array);
             riverBumpTex = createWaterRippleTexture();
@@ -1211,14 +1205,13 @@
             }
         }
 
-        // ==================== 高细节 Tesla 车队（Model 3 / Model Y 风格流线型车体 + 独立旋转轮毂） ====================
+        // ==================== 高细节 Tesla 车队 ====================
         function createTeslaCar(paintHex, spec = 'model3') {
             const car = new THREE.Group();
             const isSUV = spec === 'modely';
             const lenScale = isSUV ? 1.06 : 1.0;
             const heightScale = isSUV ? 1.14 : 1.0;
 
-            // 车漆材质（金属清漆质感）
             const paintMat = new THREE.MeshStandardMaterial({
                 color: paintHex,
                 roughness: 0.18,
@@ -1227,14 +1220,12 @@
                 clearcoatRoughness: 0.12
             });
 
-            // 黑色钢琴烤漆饰条 / 轮拱 / 扩散器
             const trimBlackMat = new THREE.MeshStandardMaterial({
                 color: 0x0b0f17,
                 roughness: 0.35,
                 metalness: 0.45
             });
 
-            // Tesla Panorama 全景玻璃车顶与车窗（深邃烟熏反光玻璃）
             const glassMat = new THREE.MeshStandardMaterial({
                 color: 0x091322,
                 emissive: 0x1e3a5f,
@@ -1243,12 +1234,10 @@
                 metalness: 0.95
             });
 
-            // 矩阵式 LED 前大灯 & 标志性双鹰翼/C形尾灯
             const headlightMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
             const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff2442 });
             const chromeAccentMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.15 });
 
-            // 1. 溜背流线车身主体（+X 为车头前进方向）
             const lowerBody = new THREE.Mesh(
                 new THREE.BoxGeometry(4.55 * lenScale, 0.62, 1.98),
                 paintMat
@@ -1258,7 +1247,6 @@
             lowerBody.receiveShadow = true;
             car.add(lowerBody);
 
-            // 前引擎盖（低趴无格栅前脸斜坡）
             const hood = new THREE.Mesh(
                 new THREE.BoxGeometry(1.38, 0.22, 1.88),
                 paintMat
@@ -1268,7 +1256,6 @@
             hood.castShadow = true;
             car.add(hood);
 
-            // 前保险杠与底部进气口饰件
             const frontBumper = new THREE.Mesh(
                 new THREE.BoxGeometry(0.45, 0.42, 1.96),
                 paintMat
@@ -1285,7 +1272,6 @@
             lowerLip.position.set(2.28 * lenScale, 0.34, 0);
             car.add(lowerLip);
 
-            // 2. 乘员舱温室与全景玻璃车顶（无框车门 + 溜背尾窗）
             const cabinCore = new THREE.Mesh(
                 new THREE.BoxGeometry(2.15 * lenScale, 0.52 * heightScale, 1.72),
                 glassMat
@@ -1294,7 +1280,6 @@
             cabinCore.castShadow = true;
             car.add(cabinCore);
 
-            // 倾斜前挡风玻璃
             const windshield = new THREE.Mesh(
                 new THREE.BoxGeometry(1.18, 0.08, 1.66),
                 glassMat
@@ -1303,7 +1288,6 @@
             windshield.rotation.z = 0.56;
             car.add(windshield);
 
-            // Panorama 一体式全景玻璃车顶（直通后窗的平滑溜背）
             const panoRoof = new THREE.Mesh(
                 new THREE.BoxGeometry(1.38 * lenScale, 0.07, 1.62),
                 glassMat
@@ -1312,7 +1296,6 @@
             panoRoof.castShadow = true;
             car.add(panoRoof);
 
-            // 溜背式后车窗与小鸭尾扰流翼
             const rearGlass = new THREE.Mesh(
                 new THREE.BoxGeometry(1.32, 0.08, 1.64),
                 glassMat
@@ -1329,7 +1312,6 @@
             spoiler.rotation.z = 0.25;
             car.add(spoiler);
 
-            // 后保险杠与底部扩散器
             const rearBumper = new THREE.Mesh(
                 new THREE.BoxGeometry(0.38, 0.44, 1.96),
                 paintMat
@@ -1345,7 +1327,6 @@
             diffuser.position.set(-2.26 * lenScale, 0.34, 0);
             car.add(diffuser);
 
-            // 3. 两侧外后视镜（摄像头翼镜造型）与隐藏式门把手
             [-1, 1].forEach(side => {
                 const mirrorArm = new THREE.Mesh(
                     new THREE.BoxGeometry(0.14, 0.08, 0.22),
@@ -1362,7 +1343,6 @@
                 mirrorCap.castShadow = true;
                 car.add(mirrorCap);
 
-                // 前后隐藏式门把手
                 [0.12, -0.78].forEach(hx => {
                     const handle = new THREE.Mesh(
                         new THREE.BoxGeometry(0.20, 0.04, 0.05),
@@ -1373,7 +1353,6 @@
                 });
             });
 
-            // 4. 标志性 LED 前大灯与尾灯组
             [-1, 1].forEach(side => {
                 const headLight = new THREE.Mesh(
                     new THREE.BoxGeometry(0.36, 0.11, 0.24),
@@ -1391,7 +1370,6 @@
                 car.add(tailLight);
             });
 
-            // 5. 4 个带轮毂辐条的独立旋转车轮
             const wheels = [];
             const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.26, 24);
             wheelGeo.rotateX(Math.PI / 2);
@@ -1435,11 +1413,9 @@
             return { car, wheels };
         }
 
-        // ==================== 陆家嘴道路 Tesla 穿梭车队 ====================
         function buildTeslaFleet() {
             const teslaColors = [0xdc2626, 0xf8fafc, 0x2563eb, 0x475569];
 
-            // 东西向主干道 (z = 45)
             for (let i = 0; i < 2; i++) {
                 const dir = i === 0 ? 1 : -1;
                 const { car, wheels } = createTeslaCar(
@@ -1459,14 +1435,12 @@
                 });
             }
 
-            // 南北向大道 (x = -42)
             for (let i = 0; i < 2; i++) {
                 const dir = i === 0 ? 1 : -1;
                 const { car, wheels } = createTeslaCar(
                     teslaColors[(i + 2) % teslaColors.length],
                     i === 1 ? 'modely' : 'model3'
                 );
-                // 车头默认沿 +X，转 -PI/2 使车头朝向 +Z
                 car.rotation.y = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
                 car.position.set(-42 + dir * 2.2, 0.04, -75 + i * 70);
                 scene.add(car);
@@ -1606,7 +1580,6 @@
             bodyRig = new THREE.Group();
             playerGroup.add(bodyRig);
 
-            // 材质库：细腻皮肤、都市风衣/夹克、深色修身长裤、运动鞋、层次发丝、金属表扣与背包
             const skinMat = new THREE.MeshStandardMaterial({
                 color: 0xf4c7a1,
                 roughness: 0.48,
@@ -1663,7 +1636,6 @@
                 metalness: 0.88
             });
 
-            // 1. 骨盆锚点（位于腰胯中心 y = 1.02，方便骨盆扭转与呼吸起伏）
             pelvisGroup = new THREE.Group();
             pelvisGroup.position.set(0, 1.02, 0);
             bodyRig.add(pelvisGroup);
@@ -1676,7 +1648,6 @@
             pelvisMesh.castShadow = true;
             pelvisGroup.add(pelvisMesh);
 
-            // 皮带与金属扣
             const beltMesh = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.246, 0.246, 0.055, 20),
                 shoeSoleMat
@@ -1692,12 +1663,10 @@
             buckle.position.set(0, 0.09, 0.205);
             pelvisGroup.add(buckle);
 
-            // 2. 躯干/胸廓组（从骨盆向上延伸至肩颈）
             chestGroup = new THREE.Group();
             chestGroup.position.set(0, 0.11, 0);
             pelvisGroup.add(chestGroup);
 
-            // 腰部收腰过渡
             const waist = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.23, 0.21, 0.24, 20),
                 coatMat
@@ -1707,7 +1676,6 @@
             waist.castShadow = true;
             chestGroup.add(waist);
 
-            // 胸腔主体（自然宽肩收腰的解剖轮廓）
             const chest = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.29, 0.23, 0.56, 22),
                 coatMat
@@ -1717,7 +1685,6 @@
             chest.castShadow = true;
             chestGroup.add(chest);
 
-            // 前襟白色内搭 V 领与珊瑚红运动细节条
             const innerV = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.11, 0.06, 0.42, 14),
                 innerShirtMat
@@ -1739,7 +1706,6 @@
             stripeR.rotation.z = 0.06;
             chestGroup.add(stripeR);
 
-            // 锁骨与肩峰过渡
             const clavicle = new THREE.Mesh(
                 new THREE.BoxGeometry(0.58, 0.07, 0.14),
                 coatMat
@@ -1747,7 +1713,6 @@
             clavicle.position.set(0, 0.72, 0.03);
             chestGroup.add(clavicle);
 
-            // 都市双肩包细节（附着于胸廓后背）
             backpackGroup = new THREE.Group();
             backpackGroup.position.set(0, 0.48, -0.22);
             const packBody = new THREE.Mesh(
@@ -1775,7 +1740,6 @@
             });
             chestGroup.add(backpackGroup);
 
-            // 3. 颈部与高细节头部组（五官立体轮廓 + 多层发型）
             const neck = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.072, 0.088, 0.16, 16),
                 skinMat
@@ -1788,7 +1752,6 @@
             headGroup.position.set(0, 0.88, 0.02);
             chestGroup.add(headGroup);
 
-            // 颅骨与柔和下颌轮廓
             const cranium = new THREE.Mesh(
                 new THREE.SphereGeometry(0.185, 24, 22),
                 skinMat
@@ -1806,7 +1769,6 @@
             jaw.position.set(0, 0.09, 0.025);
             headGroup.add(jaw);
 
-            // 鼻梁与鼻尖
             const noseBridge = new THREE.Mesh(
                 new THREE.BoxGeometry(0.032, 0.065, 0.045),
                 skinMat
@@ -1822,7 +1784,6 @@
             noseTip.position.set(0, 0.152, 0.195);
             headGroup.add(noseTip);
 
-            // 眉毛与立体眼睛（眼眶、眼白、瞳孔、高光）
             const browMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.7 });
             const scleraMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
             const irisMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
@@ -1860,7 +1821,6 @@
                 glint.position.set(side * 0.065, 0.196, 0.184);
                 headGroup.add(glint);
 
-                // 耳朵与耳垂
                 const ear = new THREE.Mesh(
                     new THREE.SphereGeometry(0.042, 12, 12),
                     skinMat
@@ -1870,7 +1830,6 @@
                 headGroup.add(ear);
             });
 
-            // 嘴唇
             const mouth = new THREE.Mesh(
                 new THREE.BoxGeometry(0.052, 0.014, 0.022),
                 lipMat
@@ -1878,7 +1837,6 @@
             mouth.position.set(0, 0.112, 0.172);
             headGroup.add(mouth);
 
-            // 多层发丝（发顶罩 + 刘海缕 + 后脑发束）
             const hairCrown = new THREE.Mesh(
                 new THREE.SphereGeometry(0.196, 24, 20, 0, Math.PI * 2, 0, Math.PI * 0.64),
                 hairMainMat
@@ -1889,7 +1847,6 @@
             hairCrown.castShadow = true;
             headGroup.add(hairCrown);
 
-            // 斜刘海发缕
             for (let i = 0; i < 5; i++) {
                 const strand = new THREE.Mesh(
                     new THREE.ConeGeometry(0.036, 0.11, 8),
@@ -1901,7 +1858,6 @@
                 headGroup.add(strand);
             }
 
-            // 后脑短发层
             const backHair = new THREE.Mesh(
                 new THREE.SphereGeometry(0.182, 18, 16),
                 hairHighlightMat
@@ -1910,12 +1866,10 @@
             backHair.position.set(0, 0.185, -0.075);
             headGroup.add(backHair);
 
-            // 4. 双段关节手臂构造器（肩部 -> 上臂 -> 肘部 -> 前臂 -> 手腕/手表 -> 手掌与手指）
             function buildArm(side) {
                 const shoulderPivot = new THREE.Group();
                 shoulderPivot.position.set(side * 0.34, 0.68, 0.01);
 
-                // 三角肌/肩部球形关节
                 const deltoid = new THREE.Mesh(
                     new THREE.SphereGeometry(0.088, 14, 14),
                     coatMat
@@ -1923,7 +1877,6 @@
                 deltoid.castShadow = true;
                 shoulderPivot.add(deltoid);
 
-                // 上臂（微锥形更贴合肌肉线条）
                 const upperArm = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.072, 0.062, 0.30, 14),
                     coatMat
@@ -1932,7 +1885,6 @@
                 upperArm.castShadow = true;
                 shoulderPivot.add(upperArm);
 
-                // 袖口边
                 const cuff = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.064, 0.062, 0.035, 14),
                     accentCoralMat
@@ -1940,7 +1892,6 @@
                 cuff.position.y = -0.295;
                 shoulderPivot.add(cuff);
 
-                // 肘部关节轴（在 elbowPivot 中，向前弯曲为负 X 旋转）
                 const elbowPivot = new THREE.Group();
                 elbowPivot.position.set(0, -0.31, 0);
                 shoulderPivot.add(elbowPivot);
@@ -1951,7 +1902,6 @@
                 );
                 elbowPivot.add(elbowJoint);
 
-                // 前臂（露肤或内衬袖口 + 自然前臂轮廓）
                 const forearm = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.058, 0.045, 0.27, 14),
                     skinMat
@@ -1960,7 +1910,6 @@
                 forearm.castShadow = true;
                 elbowPivot.add(forearm);
 
-                // 手腕智能手表（左侧佩戴更显真实）
                 if (side < 0) {
                     const watchBand = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.049, 0.049, 0.035, 14),
@@ -1977,7 +1926,6 @@
                     elbowPivot.add(watchCase);
                 }
 
-                // 手掌与拇指/四指分组
                 const palm = new THREE.Mesh(
                     new THREE.BoxGeometry(0.075, 0.095, 0.042),
                     skinMat
@@ -2014,19 +1962,16 @@
             chestGroup.add(leftShoulderPivot);
             chestGroup.add(rightShoulderPivot);
 
-            // 5. 双段关节腿部构造器（髋部 -> 大腿 -> 膝盖 -> 小腿 -> 脚踝 -> 流线运动鞋）
             function buildLeg(side) {
                 const hipPivot = new THREE.Group();
                 hipPivot.position.set(side * 0.125, -0.06, 0);
 
-                // 髋关节球体
                 const hipJoint = new THREE.Mesh(
                     new THREE.SphereGeometry(0.095, 14, 14),
                     pantsMat
                 );
                 hipPivot.add(hipJoint);
 
-                // 大腿
                 const thigh = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.105, 0.082, 0.43, 16),
                     pantsMat
@@ -2035,7 +1980,6 @@
                 thigh.castShadow = true;
                 hipPivot.add(thigh);
 
-                // 膝盖关节轴（弯曲时向后折叠，绕 X 轴正旋转）
                 const kneePivot = new THREE.Group();
                 kneePivot.position.set(0, -0.44, 0);
                 hipPivot.add(kneePivot);
@@ -2048,7 +1992,6 @@
                 kneeCap.position.z = 0.012;
                 kneePivot.add(kneeCap);
 
-                // 小腿
                 const calf = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.076, 0.056, 0.41, 16),
                     pantsMat
@@ -2057,7 +2000,6 @@
                 calf.castShadow = true;
                 kneePivot.add(calf);
 
-                // 脚踝与运动鞋（鞋底、鞋身、鞋舌、后跟反光条）
                 const ankle = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.052, 0.056, 0.05, 12),
                     shoeSoleMat
@@ -2162,7 +2104,7 @@
             }
         }
 
-        // ==================== 角色移动、多关节步态/摆臂/奔跑/跳跃动画与碰撞检测 ====================
+        // ==================== 角色移动、多关节动画与碰撞检测 ====================
         function updatePlayer(dt, elapsed = 0) {
             if (!state.started) return;
 
@@ -2235,7 +2177,6 @@
             playerGroup.rotation.y = p.yaw;
 
             if (!p.onGround) {
-                // 跳跃腾空姿态：前腿微抬、后腿伸展、双臂自然张开平衡
                 const jumpFactor = Math.max(-1, Math.min(1, p.vel.y / 11.5));
                 pelvisGroup.position.y = 1.02 + Math.sin(elapsed * 8) * 0.02;
                 chestGroup.rotation.x = -jumpFactor * 0.14;
@@ -2260,13 +2201,11 @@
                 const s = Math.sin(p.walkCycle);
                 const c = Math.cos(p.walkCycle);
 
-                // 骨盆与胸廓反向扭转 + 垂直重心起伏
                 pelvisGroup.position.y = 1.02 + Math.abs(c) * (p.isSprinting ? 0.13 : 0.065);
                 pelvisGroup.rotation.y = s * 0.08;
                 chestGroup.rotation.y = -s * 0.14;
                 chestGroup.rotation.x = p.isSprinting ? 0.20 : 0.05;
 
-                // 左腿与右腿摆动 + 膝关节折叠（抬腿向前时膝盖微屈，蹬地向后时膝盖向后折叠）
                 const lHip = s * hipAmp;
                 const rHip = -s * hipAmp;
                 leftHipPivot.rotation.x = lHip;
@@ -2277,7 +2216,6 @@
                 leftKneePivot.rotation.x = lKneeFold;
                 rightKneePivot.rotation.x = rKneeFold;
 
-                // 双臂对侧摆动 + 肘部自然弯曲
                 leftShoulderPivot.rotation.x = -s * armAmp;
                 rightShoulderPivot.rotation.x = s * armAmp;
                 leftShoulderPivot.rotation.z = 0.12 + Math.max(0, -s) * 0.06;
@@ -2286,11 +2224,9 @@
                 leftElbowPivot.rotation.x = -(p.isSprinting ? 0.78 : 0.36) - Math.max(0, s) * 0.28;
                 rightElbowPivot.rotation.x = -(p.isSprinting ? 0.78 : 0.36) - Math.max(0, -s) * 0.28;
 
-                // 头部保持稳定朝前，微随步伐点头
                 headGroup.rotation.y = s * 0.05;
                 headGroup.rotation.x = -chestGroup.rotation.x * 0.5 + Math.abs(s) * 0.03;
             } else {
-                // 待机自然呼吸与微动
                 const breath = Math.sin(elapsed * 2.2);
                 pelvisGroup.position.y += (1.02 - pelvisGroup.position.y) * 0.15;
                 pelvisGroup.rotation.y *= 0.85;
@@ -2330,6 +2266,7 @@
         }
 
         // ==================== 相机跟随与视角更新 ====================
+        // 统一俯仰角约定：pitch > 0 为向上看（仰望天空/高楼），pitch < 0 为向下看（俯视地面/江面）
         function updateCamera() {
             const p = state.player.pos;
             const c = state.camera;
@@ -2338,6 +2275,7 @@
                 const eyePos = new THREE.Vector3(p.x, p.y + 2.02, p.z);
                 camera.position.copy(eyePos);
 
+                // pitch > 0 时 Y 分量为正（向上抬头），pitch < 0 时 Y 分量为负（向下低头）
                 const lookDir = new THREE.Vector3(
                     -Math.sin(c.yaw) * Math.cos(c.pitch),
                     Math.sin(c.pitch),
@@ -2360,7 +2298,7 @@
             }
         }
 
-        // ==================== 水面波纹、游船、Tesla 车轮旋转、喷泉、能量球与地标动画 ====================
+        // ==================== 世界动画 ====================
         function updateWorldAnimations(elapsed, dt) {
             if (riverMesh && riverBasePositions) {
                 const posAttr = riverMesh.geometry.attributes.position;
@@ -2401,7 +2339,6 @@
                 b.mesh.rotation.x = Math.cos(elapsed * 2.3 + b.phase) * 0.018;
             });
 
-            // Tesla 车队移动与车轮自转（车轮几何体本地 +X 为车头，绕 Z 轴旋转实现滚动）
             cityCars.forEach(car => {
                 const absSpeed = Math.abs(car.speed);
                 if (car.wheels) {
@@ -2578,6 +2515,15 @@
             ctx.restore();
         }
 
+        // ==================== 视角俯仰角更新辅助（向上拖拽=抬头 pitch 增大，向下拖拽=低头 pitch 减小） ====================
+        function applyPitchDelta(deltaY) {
+            const pitchSign = state.cameraMode === 'first' ? -1 : 1;
+            state.camera.pitch = Math.max(
+                -0.85,
+                Math.min(0.95, state.camera.pitch + deltaY * 0.0055 * pitchSign)
+            );
+        }
+
         // ==================== 事件监听绑定 ====================
         function bindEvents() {
             document.getElementById('start-btn').addEventListener('click', () => {
@@ -2623,7 +2569,7 @@
                 state.camera.lastY = e.clientY;
 
                 state.camera.yaw -= dx * 0.0065;
-                state.camera.pitch = Math.max(-0.25, Math.min(0.85, state.camera.pitch + dy * 0.005));
+                applyPitchDelta(dy);
             });
 
             window.addEventListener('mouseup', () => {
@@ -2655,7 +2601,7 @@
                         state.camera.lastX = t.clientX;
                         state.camera.lastY = t.clientY;
                         state.camera.yaw -= dx * 0.007;
-                        state.camera.pitch = Math.max(-0.2, Math.min(0.8, state.camera.pitch + dy * 0.006));
+                        applyPitchDelta(dy);
                     }
                 }
             }, { passive: true });
@@ -2719,6 +2665,9 @@
                 state.cameraMode = state.cameraMode === 'third' ? 'first' : 'third';
                 document.getElementById('camera-mode-text').textContent =
                     state.cameraMode === 'third' ? '第三人称' : '第一人称';
+                if (state.cameraMode === 'first') {
+                    state.camera.pitch = Math.max(-0.6, Math.min(0.75, state.camera.pitch));
+                }
             });
 
             document.getElementById('teleport-pearl-btn').addEventListener('click', () => {
