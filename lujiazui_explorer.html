@@ -22,7 +22,7 @@
             height: 100%;
             overflow: hidden;
             font-family: 'Noto Sans SC', sans-serif;
-            background-color: #162238;
+            background-color: #090d16;
             color: #ffffff;
         }
 
@@ -40,18 +40,18 @@
             height: 100%;
         }
 
-        /* 玻璃拟态 UI 卡片（更通透明亮） */
+        /* 玻璃拟态 UI 卡片 */
         .glass-panel {
-            background: rgba(28, 42, 70, 0.72);
+            background: rgba(15, 23, 42, 0.72);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            box-shadow: 0 8px 32px rgba(10, 18, 36, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         .neon-border-pink {
-            border-color: rgba(244, 114, 182, 0.65);
-            box-shadow: 0 0 22px rgba(244, 114, 182, 0.28);
+            border-color: rgba(236, 72, 153, 0.55);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.25);
         }
 
         .btn-glow {
@@ -59,7 +59,7 @@
         }
         .btn-glow:hover {
             transform: translateY(-1px);
-            box-shadow: 0 0 18px rgba(244, 114, 182, 0.55);
+            box-shadow: 0 0 18px rgba(236, 72, 153, 0.5);
         }
         .btn-glow:active {
             transform: scale(0.96);
@@ -80,8 +80,8 @@
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.16);
-            border: 2px solid rgba(255, 255, 255, 0.34);
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.25);
             position: relative;
             backdrop-filter: blur(4px);
         }
@@ -90,12 +90,12 @@
             width: 48px;
             height: 48px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #f472b6, #22d3ee);
+            background: linear-gradient(135deg, #ec4899, #06b6d4);
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.28);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             pointer-events: none;
         }
 
@@ -130,43 +130,43 @@
     <div id="flash-overlay"></div>
 
     <!-- 开始欢迎界面 -->
-    <div id="start-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/55 backdrop-blur-md">
+    <div id="start-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
         <div class="glass-panel neon-border-pink rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center relative overflow-hidden">
-            <div class="absolute -top-24 -right-24 w-48 h-48 bg-pink-400/25 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/25 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -top-24 -right-24 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-400/20 border border-pink-300/45 text-pink-200 text-xs font-semibold mb-4">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/20 border border-pink-500/40 text-pink-300 text-xs font-semibold mb-4">
                 <span>🏙️ 3D 沉浸式城市漫步</span>
             </div>
 
-            <h1 class="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-pink-300 via-sky-200 to-cyan-200 bg-clip-text text-transparent mb-2">
+            <h1 class="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-pink-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent mb-2">
                 漫步陆家嘴
             </h1>
-            <p class="text-slate-100/90 text-sm sm:text-base mb-6">
+            <p class="text-slate-300 text-sm sm:text-base mb-6">
                 自由穿梭于上海金融中心，近距离仰望东方明珠、环球金融中心与上海中心大厦，漫步黄浦江滨江大道。
             </p>
 
             <!-- 操作指南网格 -->
-            <div class="grid grid-cols-2 gap-3 text-left bg-slate-800/65 rounded-2xl p-4 mb-6 border border-slate-600/60 text-xs sm:text-sm">
+            <div class="grid grid-cols-2 gap-3 text-left bg-slate-900/60 rounded-2xl p-4 mb-6 border border-slate-800 text-xs sm:text-sm">
                 <div class="flex items-center gap-2.5">
-                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-cyan-300 font-bold">WASD / 方向键</span>
-                    <span class="text-slate-100">行走移动</span>
+                    <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-cyan-400 font-bold">WASD / 方向键</span>
+                    <span class="text-slate-300">行走移动</span>
                 </div>
                 <div class="flex items-center gap-2.5">
-                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-pink-300 font-bold">鼠标拖拽</span>
-                    <span class="text-slate-100">环顾四周视角</span>
+                    <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-pink-400 font-bold">鼠标拖拽</span>
+                    <span class="text-slate-300">环顾四周视角</span>
                 </div>
                 <div class="flex items-center gap-2.5">
-                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-amber-300 font-bold">Shift</span>
-                    <span class="text-slate-100">加速奔跑</span>
+                    <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-amber-400 font-bold">Shift</span>
+                    <span class="text-slate-300">加速奔跑</span>
                 </div>
                 <div class="flex items-center gap-2.5">
-                    <span class="px-2 py-1 rounded bg-slate-700/90 border border-slate-500/60 font-mono text-emerald-300 font-bold">Space 空格</span>
-                    <span class="text-slate-100">跳跃</span>
+                    <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-emerald-400 font-bold">Space 空格</span>
+                    <span class="text-slate-300">跳跃</span>
                 </div>
             </div>
 
-            <button id="start-btn" class="w-full py-3.5 px-6 rounded-2xl font-bold text-white text-base sm:text-lg bg-gradient-to-r from-pink-500 via-indigo-500 to-cyan-500 hover:from-pink-400 hover:to-cyan-400 btn-glow shadow-lg cursor-pointer">
+            <button id="start-btn" class="w-full py-3.5 px-6 rounded-2xl font-bold text-white text-base sm:text-lg bg-gradient-to-r from-pink-600 via-purple-600 to-cyan-600 hover:from-pink-500 hover:to-cyan-500 btn-glow shadow-lg cursor-pointer">
                 开始探索陆家嘴 🚀
             </button>
         </div>
@@ -180,16 +180,16 @@
             <!-- 探索进度与坐标 -->
             <div class="glass-panel rounded-2xl px-4 py-2.5 pointer-events-auto flex items-center gap-4">
                 <div>
-                    <div class="text-[11px] text-slate-300 uppercase tracking-wider">探索打卡点</div>
-                    <div class="text-base sm:text-lg font-bold text-pink-300 flex items-center gap-1.5">
+                    <div class="text-[11px] text-slate-400 uppercase tracking-wider">探索打卡点</div>
+                    <div class="text-base sm:text-lg font-bold text-pink-400 flex items-center gap-1.5">
                         <span>📍</span>
                         <span id="landmark-counter">0 / 5</span>
                     </div>
                 </div>
-                <div class="h-7 w-px bg-slate-500/60"></div>
+                <div class="h-7 w-px bg-slate-700"></div>
                 <div>
-                    <div class="text-[11px] text-slate-300 uppercase tracking-wider">探索积分</div>
-                    <div class="text-base sm:text-lg font-bold text-cyan-300" id="score-display">0</div>
+                    <div class="text-[11px] text-slate-400 uppercase tracking-wider">探索积分</div>
+                    <div class="text-base sm:text-lg font-bold text-cyan-400" id="score-display">0</div>
                 </div>
             </div>
 
@@ -197,25 +197,25 @@
             <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
                 <!-- 昼夜/霓虹切换 -->
                 <div class="glass-panel rounded-2xl p-1 flex items-center gap-1">
-                    <button data-time="night" class="time-btn active px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-500 text-white transition cursor-pointer">
+                    <button data-time="night" class="time-btn active px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white transition cursor-pointer">
                         🌃 璀璨夜景
                     </button>
-                    <button data-time="sunset" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white transition cursor-pointer">
+                    <button data-time="sunset" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer">
                         🌇 陆家嘴黄昏
                     </button>
-                    <button data-time="day" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-200 hover:text-white transition cursor-pointer">
+                    <button data-time="day" class="time-btn px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer">
                         ☀️ 晴朗白昼
                     </button>
                 </div>
 
                 <!-- 视角切换 -->
-                <button id="toggle-camera-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-slate-100 hover:text-white hover:border-cyan-300/60 transition cursor-pointer flex items-center gap-1.5">
+                <button id="toggle-camera-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:border-cyan-400/50 transition cursor-pointer flex items-center gap-1.5">
                     <span>👁️</span>
                     <span id="camera-mode-text">第三人称</span>
                 </button>
 
                 <!-- 拍照模式 -->
-                <button id="photo-mode-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-amber-200 hover:border-amber-300/60 transition cursor-pointer flex items-center gap-1.5">
+                <button id="photo-mode-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-amber-300 hover:border-amber-400/50 transition cursor-pointer flex items-center gap-1.5">
                     <span>📷</span>
                     <span>拍照打卡</span>
                 </button>
@@ -225,10 +225,10 @@
         <!-- 右侧小地图雷达 -->
         <div class="fixed top-20 right-3 sm:right-5 pointer-events-auto">
             <div class="glass-panel rounded-2xl p-2 flex flex-col items-center">
-                <canvas id="minimap-canvas" width="136" height="136" class="rounded-xl bg-slate-900/90 border border-slate-600/70"></canvas>
-                <div class="text-[10px] text-slate-300 mt-1 flex items-center gap-2">
-                    <span class="inline-block w-2 h-2 rounded-full bg-pink-400"></span> 东方明珠
-                    <span class="inline-block w-2 h-2 rounded-full bg-amber-300"></span> 打卡点
+                <canvas id="minimap-canvas" width="136" height="136" class="rounded-xl bg-slate-950/90 border border-slate-800"></canvas>
+                <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-pink-500"></span> 东方明珠
+                    <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span> 打卡点
                 </div>
             </div>
         </div>
@@ -237,26 +237,26 @@
         <div id="landmark-card" class="fixed bottom-28 sm:bottom-10 left-1/2 -translate-x-1/2 w-[92%] max-w-md glass-panel neon-border-pink rounded-3xl p-5 pointer-events-auto transition-all duration-300 opacity-0 translate-y-6 pointer-events-none">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <span id="landmark-badge" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-400/20 text-pink-200 border border-pink-300/40 mb-1.5">
+                    <span id="landmark-badge" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30 mb-1.5">
                         ✨ 发现地标 (+200 积分)
                     </span>
                     <h3 id="landmark-title" class="text-xl font-black text-white">东方明珠广播电视塔</h3>
                 </div>
-                <button id="close-landmark-btn" class="w-8 h-8 rounded-full bg-slate-700/80 hover:bg-slate-600 text-slate-200 flex items-center justify-center text-sm cursor-pointer">
+                <button id="close-landmark-btn" class="w-8 h-8 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-sm cursor-pointer">
                     ✕
                 </button>
             </div>
-            <p id="landmark-desc" class="text-xs sm:text-sm text-slate-200 mt-2 leading-relaxed">
+            <p id="landmark-desc" class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
                 高468米，由11个大小不一的球体串联而成，是上海最具标志性的文化景观之一。
             </p>
         </div>
 
         <!-- 底部操作提示与快捷传送 -->
         <div class="fixed bottom-4 right-4 hidden sm:flex items-center gap-2 pointer-events-auto">
-            <button id="teleport-pearl-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-200 hover:text-pink-200 transition cursor-pointer">
+            <button id="teleport-pearl-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-pink-300 transition cursor-pointer">
                 🗼 回到明珠广场
             </button>
-            <button id="teleport-bund-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-200 hover:text-cyan-200 transition cursor-pointer">
+            <button id="teleport-bund-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-cyan-300 transition cursor-pointer">
                 🌊 漫步滨江大道
             </button>
         </div>
@@ -268,7 +268,7 @@
             </div>
         </div>
         <div class="fixed bottom-7 right-6 sm:hidden flex flex-col gap-3 z-25 pointer-events-auto">
-            <button id="mobile-sprint-btn" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center text-sm font-bold text-amber-300 active:scale-90">
+            <button id="mobile-sprint-btn" class="w-12 h-12 rounded-full glass-panel flex items-center justify-center text-sm font-bold text-amber-400 active:scale-90">
                 ⚡
             </button>
             <button id="mobile-jump-btn" class="w-14 h-14 rounded-full glass-panel neon-border-pink flex items-center justify-center text-sm font-bold text-white active:scale-90">
@@ -279,27 +279,27 @@
 
     <!-- 拍照模式专属悬浮条 -->
     <div id="photo-ui" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 hidden flex items-center gap-3 glass-panel rounded-full px-5 py-3">
-        <span class="text-xs text-slate-200 hidden sm:inline">拖拽画面调整构图</span>
+        <span class="text-xs text-slate-300 hidden sm:inline">拖拽画面调整构图</span>
         <button id="shutter-btn" class="px-5 py-2 rounded-full bg-gradient-to-r from-pink-500 to-cyan-500 text-white font-bold text-sm shadow-lg hover:brightness-110 cursor-pointer">
             📸 拍摄留念
         </button>
-        <button id="exit-photo-btn" class="px-4 py-2 rounded-full bg-slate-700/90 text-slate-200 hover:text-white text-xs font-bold cursor-pointer">
+        <button id="exit-photo-btn" class="px-4 py-2 rounded-full bg-slate-800 text-slate-300 hover:text-white text-xs font-bold cursor-pointer">
             退出拍照
         </button>
     </div>
 
     <!-- 照片预览弹窗 -->
-    <div id="photo-preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div id="photo-preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div class="glass-panel rounded-3xl max-w-lg w-full p-5 text-center">
             <h3 class="text-lg font-bold text-white mb-3">📸 陆家嘴城市明信片</h3>
-            <div class="rounded-2xl overflow-hidden border border-slate-600 mb-4 bg-slate-900">
+            <div class="rounded-2xl overflow-hidden border border-slate-700 mb-4 bg-slate-900">
                 <img id="captured-image" src="" alt="Captured City View" class="w-full h-auto block">
             </div>
             <div class="flex items-center justify-center gap-3">
-                <a id="download-photo-link" download="shanghai_lujiazui.png" class="px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-sm cursor-pointer">
+                <a id="download-photo-link" download="shanghai_lujiazui.png" class="px-5 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-sm cursor-pointer">
                     ⬇️ 保存照片
                 </a>
-                <button id="close-photo-preview-btn" class="px-5 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-100 font-bold text-sm cursor-pointer">
+                <button id="close-photo-preview-btn" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm cursor-pointer">
                     继续漫步
                 </button>
             </div>
@@ -409,20 +409,20 @@
 
             // 1. 初始化场景与时钟
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x23385e, 0.0018);
+            scene.fog = new THREE.FogExp2(0x090d16, 0.0024);
             clock = new THREE.Clock();
 
             // 2. 透视相机
             camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.2, 800);
 
-            // 3. 渲染器（开启 preserveDrawingBuffer 以便拍照截屏，提高曝光度）
+            // 3. 渲染器（开启 preserveDrawingBuffer 以便拍照截屏）
             renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.32;
+            renderer.toneMappingExposure = 1.15;
             container.appendChild(renderer.domElement);
 
             // 4. 构建世界元素
@@ -441,15 +441,15 @@
             bindEvents();
         }
 
-        // ==================== 光照系统（整体提亮） ====================
+        // ==================== 光照系统 ====================
         function setupLighting() {
-            hemiLight = new THREE.HemisphereLight(0xc2dcff, 0x5c6885, 1.35);
+            hemiLight = new THREE.HemisphereLight(0x88aaff, 0x1e293b, 0.65);
             scene.add(hemiLight);
 
-            ambientLight = new THREE.AmbientLight(0x7c8db0, 1.05);
+            ambientLight = new THREE.AmbientLight(0x334155, 0.6);
             scene.add(ambientLight);
 
-            dirLight = new THREE.DirectionalLight(0xfff1dc, 2.0);
+            dirLight = new THREE.DirectionalLight(0xffeedd, 1.2);
             dirLight.position.set(120, 180, 90);
             dirLight.castShadow = true;
             dirLight.shadow.mapSize.width = 2048;
@@ -466,24 +466,24 @@
 
         // ==================== 地面、道路、广场与黄浦江 ====================
         function buildGroundAndRiver() {
-            // 陆地主地面（陆家嘴半岛区域 x > -68，调亮为清爽石板灰蓝）
+            // 陆地主地面（陆家嘴半岛区域 x > -68）
             const landGeo = new THREE.BoxGeometry(320, 2, 360);
             const landMat = new THREE.MeshStandardMaterial({
-                color: 0x43506b,
-                roughness: 0.78,
-                metalness: 0.12
+                color: 0x1e2533,
+                roughness: 0.85,
+                metalness: 0.1
             });
             const landMesh = new THREE.Mesh(landGeo, landMat);
             landMesh.position.set(92, -1, 0);
             landMesh.receiveShadow = true;
             scene.add(landMesh);
 
-            // 东方明珠圆形中央广场铺装（明亮浅灰蓝）
+            // 东方明珠圆形中央广场铺装
             const plazaGeo = new THREE.CylinderGeometry(36, 36, 0.12, 64);
             const plazaMat = new THREE.MeshStandardMaterial({
-                color: 0x6b7c9e,
-                roughness: 0.55,
-                metalness: 0.18
+                color: 0x334155,
+                roughness: 0.6,
+                metalness: 0.2
             });
             const plaza = new THREE.Mesh(plazaGeo, plazaMat);
             plaza.position.set(0, 0.04, 0);
@@ -492,15 +492,15 @@
 
             // 广场发光装饰圆环
             const ringGeo = new THREE.RingGeometry(28, 28.6, 64);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf472b6, side: THREE.DoubleSide });
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xec4899, side: THREE.DoubleSide });
             const ring = new THREE.Mesh(ringGeo, ringMat);
             ring.rotation.x = -Math.PI / 2;
             ring.position.set(0, 0.12, 0);
             scene.add(ring);
 
             // 世纪大道与环岛道路网格
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x313d54, roughness: 0.85 });
-            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0 });
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
 
             // 环岛主路
             const ringRoadGeo = new THREE.RingGeometry(36.5, 48, 64);
@@ -538,25 +538,25 @@
             // 滨江大道木栈道与护栏 (x = -68)
             const boardwalk = new THREE.Mesh(
                 new THREE.BoxGeometry(10, 0.3, 340),
-                new THREE.MeshStandardMaterial({ color: 0x8b6344, roughness: 0.72 })
+                new THREE.MeshStandardMaterial({ color: 0x473325, roughness: 0.8 })
             );
             boardwalk.position.set(-63, 0.15, 0);
             boardwalk.receiveShadow = true;
             scene.add(boardwalk);
 
             // 滨江白色安全护栏（带碰撞防止掉进江里）
-            const railMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.45, roughness: 0.28 });
+            const railMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6, roughness: 0.3 });
             const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.1, 340), railMat);
             topRail.position.set(-67.8, 0.65, 0);
             scene.add(topRail);
             colliders.push({ minX: -75, maxX: -67.5, minZ: -170, maxZ: 170 });
 
-            // 黄浦江水面 (x < -68，调亮为清澈碧蓝江水)
+            // 黄浦江水面 (x < -68)
             const riverGeo = new THREE.PlaneGeometry(240, 420);
             const riverMat = new THREE.MeshStandardMaterial({
-                color: 0x1d6fa5,
-                roughness: 0.2,
-                metalness: 0.65
+                color: 0x06182c,
+                roughness: 0.15,
+                metalness: 0.85
             });
             const river = new THREE.Mesh(riverGeo, riverMat);
             river.rotation.x = -Math.PI / 2;
@@ -565,8 +565,8 @@
 
             // 对岸外滩远景轮廓剪影（增强纵深感）
             const bundGroup = new THREE.Group();
-            const bundBuildingMat = new THREE.MeshStandardMaterial({ color: 0x56678a, roughness: 0.65 });
-            const bundGoldMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+            const bundBuildingMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+            const bundGoldMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
             for (let z = -150; z <= 150; z += 24) {
                 const h = 14 + Math.sin(z * 0.1) * 5;
                 const w = 16;
@@ -586,13 +586,13 @@
         }
 
         function createRiverBoats() {
-            const boatColors = [0xf472b6, 0x22d3ee, 0xfbbf24];
+            const boatColors = [0xec4899, 0x06b6d4, 0xf59e0b];
             for (let i = 0; i < 3; i++) {
                 const boat = new THREE.Group();
                 // 船体
                 const hull = new THREE.Mesh(
                     new THREE.BoxGeometry(5, 1.8, 16),
-                    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.35 })
+                    new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 })
                 );
                 hull.position.y = 0.4;
                 boat.add(hull);
@@ -600,7 +600,7 @@
                 // 船舱
                 const cabin = new THREE.Mesh(
                     new THREE.BoxGeometry(3.8, 1.6, 10),
-                    new THREE.MeshStandardMaterial({ color: 0x3b4d6e, roughness: 0.25 })
+                    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2 })
                 );
                 cabin.position.y = 1.9;
                 boat.add(cabin);
@@ -625,27 +625,27 @@
             pearlTowerGroup = new THREE.Group();
             pearlTowerGroup.position.set(0, 0, 0);
 
-            // 材质定义（明亮银白与粉晶光泽）
+            // 材质定义
             const concreteMat = new THREE.MeshStandardMaterial({
-                color: 0xeff6ff,
-                roughness: 0.38,
-                metalness: 0.32
+                color: 0xdbeafe,
+                roughness: 0.45,
+                metalness: 0.35
             });
 
             const spherePinkMat = new THREE.MeshStandardMaterial({
-                color: 0xf9a8d4,
-                emissive: 0xf472b6,
-                emissiveIntensity: 0.72,
+                color: 0xf472b6,
+                emissive: 0xdb2777,
+                emissiveIntensity: 0.65,
                 roughness: 0.2,
-                metalness: 0.55
+                metalness: 0.7
             });
 
             const ringCyanMat = new THREE.MeshBasicMaterial({
-                color: 0x67e8f9
+                color: 0x22d3ee
             });
 
             const ringMagentaMat = new THREE.MeshBasicMaterial({
-                color: 0xfb7185
+                color: 0xf43f5e
             });
 
             // 1. 底部基座大厅（三层圆形展厅）
@@ -759,12 +759,12 @@
             pearlTowerGroup.add(spireTip);
 
             // 塔尖航空障碍灯
-            const beaconLight = new THREE.PointLight(0xf472b6, 3.0, 150);
+            const beaconLight = new THREE.PointLight(0xff2a85, 2.5, 140);
             beaconLight.position.set(0, 45, 0);
             pearlTowerGroup.add(beaconLight);
             pearlLights.push(beaconLight);
 
-            const topBeacon = new THREE.PointLight(0x67e8f9, 2.4, 130);
+            const topBeacon = new THREE.PointLight(0x22d3ee, 2.0, 120);
             topBeacon.position.set(0, 125, 0);
             pearlTowerGroup.add(topBeacon);
             pearlLights.push(topBeacon);
@@ -774,23 +774,23 @@
 
         // ==================== 陆家嘴天际线建筑群 ====================
         function buildLujiazuiSkyline() {
-            // 创建玻璃幕墙发光窗户纹理（提高明暗对比与整体亮度）
+            // 创建玻璃幕墙发光窗户纹理
             const winTex = createWindowTexture();
             const glassMatCyan = new THREE.MeshStandardMaterial({
-                color: 0x3b82f6,
-                emissive: 0x7dd3fc,
+                color: 0x1e3a8a,
+                emissive: 0x38bdf8,
                 emissiveMap: winTex,
-                emissiveIntensity: 0.78,
-                roughness: 0.2,
-                metalness: 0.72
+                emissiveIntensity: 0.75,
+                roughness: 0.15,
+                metalness: 0.85
             });
             const glassMatGold = new THREE.MeshStandardMaterial({
-                color: 0x64748b,
-                emissive: 0xfde047,
+                color: 0x1e293b,
+                emissive: 0xfbbf24,
                 emissiveMap: winTex,
-                emissiveIntensity: 0.72,
-                roughness: 0.24,
-                metalness: 0.68
+                emissiveIntensity: 0.7,
+                roughness: 0.2,
+                metalness: 0.8
             });
             buildingWindowMats.push(glassMatCyan, glassMatGold);
 
@@ -826,7 +826,7 @@
             const rightPillar = new THREE.Mesh(new THREE.BoxGeometry(4, 32, 20), glassMatCyan);
             rightPillar.position.set(8, 161, 0);
             swfc.add(rightPillar);
-            const topBridge = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 20), new THREE.MeshBasicMaterial({ color: 0x7dd3fc }));
+            const topBridge = new THREE.Mesh(new THREE.BoxGeometry(20, 6, 20), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
             topBridge.position.set(0, 178, 0);
             swfc.add(topBridge);
             scene.add(swfc);
@@ -848,7 +848,7 @@
                 tierMesh.castShadow = true;
                 jinmao.add(tierMesh);
             });
-            const jmSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 1.5, 20, 12), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+            const jmSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 1.5, 20, 12), new THREE.MeshBasicMaterial({ color: 0xfde047 }));
             jmSpire.position.y = 160;
             jinmao.add(jmSpire);
             scene.add(jinmao);
@@ -875,7 +875,7 @@
                 // 楼顶霓虹勾边
                 const roofTrim = new THREE.Mesh(
                     new THREE.BoxGeometry(b.w + 0.4, 0.8, b.d + 0.4),
-                    new THREE.MeshBasicMaterial({ color: b.mat === glassMatCyan ? 0x38bdf8 : 0xfbbf24 })
+                    new THREE.MeshBasicMaterial({ color: b.mat === glassMatCyan ? 0x06b6d4 : 0xf59e0b })
                 );
                 roofTrim.position.set(b.x, b.h + 0.4, b.z);
                 scene.add(roofTrim);
@@ -895,13 +895,13 @@
             canvas.width = 128;
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#24344d';
+            ctx.fillStyle = '#050811';
             ctx.fillRect(0, 0, 128, 256);
 
             for (let y = 4; y < 252; y += 8) {
                 for (let x = 4; x < 124; x += 8) {
-                    if (Math.random() > 0.22) {
-                        const brightness = Math.floor(195 + Math.random() * 60);
+                    if (Math.random() > 0.28) {
+                        const brightness = Math.floor(160 + Math.random() * 95);
                         ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
                         ctx.fillRect(x, y, 5, 4);
                     }
@@ -916,10 +916,10 @@
 
         // ==================== 街道景观：路灯、绿化树、长椅 ====================
         function buildStreetProps() {
-            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7c4a27, roughness: 0.82 });
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.72 });
-            const poleMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.32 });
-            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef9c3 });
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
+            const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7, roughness: 0.3 });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
 
             // 沿滨江大道与广场外围种植行道树和路灯
             for (let z = -110; z <= 110; z += 22) {
@@ -983,10 +983,10 @@
                 // 地面光环
                 const ringGeo = new THREE.RingGeometry(2.6, 3.2, 32);
                 const ringMat = new THREE.MeshBasicMaterial({
-                    color: 0xfbbf24,
+                    color: 0xf59e0b,
                     side: THREE.DoubleSide,
                     transparent: true,
-                    opacity: 0.9
+                    opacity: 0.85
                 });
                 const ring = new THREE.Mesh(ringGeo, ringMat);
                 ring.rotation.x = -Math.PI / 2;
@@ -996,7 +996,7 @@
                 // 悬浮菱形水晶图标
                 const gemGeo = new THREE.OctahedronGeometry(0.9, 0);
                 const gemMat = new THREE.MeshBasicMaterial({
-                    color: 0xfde047,
+                    color: 0xfbbf24,
                     wireframe: false
                 });
                 const gem = new THREE.Mesh(gemGeo, gemMat);
@@ -1006,9 +1006,9 @@
                 // 半透明光柱
                 const beamGeo = new THREE.CylinderGeometry(2.5, 2.5, 8, 24, 1, true);
                 const beamMat = new THREE.MeshBasicMaterial({
-                    color: 0xfbbf24,
+                    color: 0xf59e0b,
                     transparent: true,
-                    opacity: 0.2,
+                    opacity: 0.14,
                     side: THREE.DoubleSide
                 });
                 const beam = new THREE.Mesh(beamGeo, beamMat);
@@ -1025,10 +1025,10 @@
             playerGroup = new THREE.Group();
             playerGroup.position.copy(state.player.pos);
 
-            const jacketMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.45 }); // 明亮粉红夹克
-            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x3b4d6e, roughness: 0.65 });
+            const jacketMat = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.5 }); // 时尚洋红夹克
+            const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
             const skinMat = new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.5 });
-            const hairMat = new THREE.MeshStandardMaterial({ color: 0x2a364d, roughness: 0.7 });
+            const hairMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
 
             // 躯干
             const torso = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.25, 0.52), jacketMat);
@@ -1071,52 +1071,48 @@
             scene.add(playerGroup);
         }
 
-        // ==================== 时间/天气主题切换（整体调亮） ====================
+        // ==================== 时间/天气主题切换 ====================
         function applyTimeTheme(mode) {
             state.timeMode = mode;
 
             // 更新按钮高亮
             document.querySelectorAll('.time-btn').forEach(btn => {
                 if (btn.dataset.time === mode) {
-                    btn.classList.add('bg-pink-500', 'text-white');
-                    btn.classList.remove('text-slate-200');
+                    btn.classList.add('bg-pink-600', 'text-white');
+                    btn.classList.remove('text-slate-300');
                 } else {
-                    btn.classList.remove('bg-pink-500', 'text-white');
-                    btn.classList.add('text-slate-200');
+                    btn.classList.remove('bg-pink-600', 'text-white');
+                    btn.classList.add('text-slate-300');
                 }
             });
 
             if (mode === 'night') {
-                // 明亮清透的蓝紫夜空与城市灯光
-                scene.background = new THREE.Color(0x223861);
-                scene.fog.color.setHex(0x28416e);
-                hemiLight.color.setHex(0xc4dcff);
-                hemiLight.intensity = 1.35;
-                ambientLight.intensity = 1.05;
-                dirLight.color.setHex(0xdbeafe);
-                dirLight.intensity = 1.75;
-                pearlLights.forEach(l => l.intensity = 3.2);
+                scene.background = new THREE.Color(0x070b14);
+                scene.fog.color.setHex(0x070b14);
+                hemiLight.color.setHex(0x6366f1);
+                hemiLight.intensity = 0.55;
+                dirLight.color.setHex(0x93c5fd);
+                dirLight.intensity = 0.65;
+                pearlLights.forEach(l => l.intensity = 2.8);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.85);
             } else if (mode === 'sunset') {
-                scene.background = new THREE.Color(0x7c4d7a);
-                scene.fog.color.setHex(0x965e7e);
-                hemiLight.color.setHex(0xfdba74);
-                hemiLight.intensity = 1.45;
-                ambientLight.intensity = 1.1;
-                dirLight.color.setHex(0xffb36b);
-                dirLight.intensity = 2.35;
-                pearlLights.forEach(l => l.intensity = 2.0);
-                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.52);
+                scene.background = new THREE.Color(0x3b1d4a);
+                scene.fog.color.setHex(0x4c1d4b);
+                hemiLight.color.setHex(0xf97316);
+                hemiLight.intensity = 0.85;
+                dirLight.color.setHex(0xfb923c);
+                dirLight.intensity = 1.65;
+                pearlLights.forEach(l => l.intensity = 1.6);
+                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.45);
             } else if (mode === 'day') {
-                scene.background = new THREE.Color(0x7dd3fc);
-                scene.fog.color.setHex(0xbae6fd);
-                hemiLight.color.setHex(0xf0f9ff);
-                hemiLight.intensity = 1.75;
-                ambientLight.intensity = 1.25;
+                scene.background = new THREE.Color(0x60a5fa);
+                scene.fog.color.setHex(0x93c5fd);
+                hemiLight.color.setHex(0xe0f2fe);
+                hemiLight.intensity = 1.1;
                 dirLight.color.setHex(0xffffff);
-                dirLight.intensity = 2.65;
-                pearlLights.forEach(l => l.intensity = 0.5);
-                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.16);
+                dirLight.intensity = 2.0;
+                pearlLights.forEach(l => l.intensity = 0.3);
+                buildingWindowMats.forEach(m => m.emissiveIntensity = 0.08);
             }
         }
 
@@ -1271,7 +1267,7 @@
             });
             if (state.timeMode === 'night') {
                 const hue = (elapsed * 0.06) % 1;
-                pearlLights[0].color.setHSL(hue, 0.85, 0.65);
+                pearlLights[0].color.setHSL(hue, 0.9, 0.55);
             }
 
             // 2. 黄浦江游船航行循环
@@ -1320,9 +1316,9 @@
                 // 已打卡光柱变为翠绿色
                 const cpObj = checkpointMeshes.find(c => c.id === lm.id);
                 if (cpObj) {
-                    cpObj.ring.material.color.setHex(0x34d399);
-                    cpObj.gem.material.color.setHex(0x6ee7b7);
-                    cpObj.beam.material.color.setHex(0x34d399);
+                    cpObj.ring.material.color.setHex(0x10b981);
+                    cpObj.gem.material.color.setHex(0x34d399);
+                    cpObj.beam.material.color.setHex(0x10b981);
                 }
             } else {
                 document.getElementById('landmark-badge').textContent = '📍 正在游览地标';
@@ -1354,12 +1350,12 @@
             ctx.clearRect(0, 0, w, h);
 
             // 背景与黄浦江水域
-            ctx.fillStyle = '#1e2f4d';
+            ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, w, h);
 
             const riverEdgeX = cx + (-68 - state.player.pos.x) * scale;
             if (riverEdgeX > 0) {
-                ctx.fillStyle = '#2589bd';
+                ctx.fillStyle = '#0369a1';
                 ctx.fillRect(0, 0, Math.min(w, riverEdgeX), h);
             }
 
@@ -1370,7 +1366,7 @@
                 if (mx > 4 && mx < w - 4 && my > 4 && my < h - 4) {
                     ctx.beginPath();
                     ctx.arc(mx, my, 3.5, 0, Math.PI * 2);
-                    ctx.fillStyle = state.unlockedLandmarks.has(lm.id) ? '#34d399' : '#fbbf24';
+                    ctx.fillStyle = state.unlockedLandmarks.has(lm.id) ? '#10b981' : '#f59e0b';
                     ctx.fill();
                 }
             });
@@ -1380,7 +1376,7 @@
             const pearlY = cy + (0 - state.player.pos.z) * scale;
             ctx.beginPath();
             ctx.arc(pearlX, pearlY, 5.5, 0, Math.PI * 2);
-            ctx.fillStyle = '#f472b6';
+            ctx.fillStyle = '#ec4899';
             ctx.fill();
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.2;
@@ -1396,7 +1392,7 @@
             ctx.lineTo(0, 2.5);
             ctx.lineTo(-4.5, 5);
             ctx.closePath();
-            ctx.fillStyle = '#67e8f9';
+            ctx.fillStyle = '#22d3ee';
             ctx.fill();
             ctx.restore();
         }
