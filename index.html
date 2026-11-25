@@ -1008,7 +1008,6 @@
 
             const upperSphere = new THREE.Mesh(new THREE.SphereGeometry(9.2, 36, 36), spherePinkMat);
             upperSphere.position.y = 122;
-            upperSphere.castShadow = true;
             pearlTowerGroup.add(upperSphere);
 
             const upperEquator = new THREE.Mesh(new THREE.TorusGeometry(9.5, 0.3, 12, 48), ringMagentaMat);
@@ -2267,7 +2266,8 @@
         }
 
         // ==================== 相机跟随与视角更新 ====================
-        // 统一俯仰角约定：pitch > 0 为向上看（仰望天空/高楼），pitch < 0 为向下看（俯视地面/江面）
+        // 第一人称：pitch > 0 为向上看（抬头），pitch < 0 为向下看（低头）
+        // 第三人称：pitch 增大使相机位置升高（从更高处俯视/看向上方），pitch 减小使相机降低
         function updateCamera() {
             const p = state.player.pos;
             const c = state.camera;
@@ -2276,7 +2276,6 @@
                 const eyePos = new THREE.Vector3(p.x, p.y + 2.02, p.z);
                 camera.position.copy(eyePos);
 
-                // pitch > 0 时 Y 分量为正（向上抬头），pitch < 0 时 Y 分量为负（向下低头）
                 const lookDir = new THREE.Vector3(
                     -Math.sin(c.yaw) * Math.cos(c.pitch),
                     Math.sin(c.pitch),
@@ -2517,8 +2516,8 @@
         }
 
         // ==================== 视角俯仰角更新辅助 ====================
-        // 第一人称：向上滑动/拖动（deltaY < 0）使 pitch 增大（向上看）；向下滑动/拖动（deltaY > 0）使 pitch 减小（向下看）
-        // 第三人称：保留原有拖动俯仰方向（deltaY > 0 时 pitch 增大，相机上移俯视角色；deltaY < 0 时 pitch 减小，相机下移仰望）
+        // 第一人称：deltaY < 0（向上滑动/拖动）时 pitch 增大（向上看）；deltaY > 0（向下滑动/拖动）时 pitch 减小（向下看）
+        // 第三人称：deltaY < 0（向上滑动/拖动）时 pitch 减小（相机降低，视线更朝上）；deltaY > 0（向下滑动/拖动）时 pitch 增大（相机升高，视线更朝下）
         function applyPitchDelta(deltaY) {
             const pitchSign = state.cameraMode === 'first' ? -1 : 1;
             state.camera.pitch = Math.max(
