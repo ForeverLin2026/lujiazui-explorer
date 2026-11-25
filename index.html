@@ -366,7 +366,7 @@
 
         // 场景核心变量
         let scene, camera, renderer, clock;
-        let ambientLight, dirLight, hemiLight;
+        let ambientLight, dirLight, hemiLight, characterRimLight;
         let pearlTowerGroup, pearlLights = [], pearlRings = [];
         let playerGroup, bodyRig, chestGroup, pelvisGroup;
         let leftShoulderPivot, leftElbowPivot, rightShoulderPivot, rightElbowPivot;
@@ -509,6 +509,10 @@
             dirLight.shadow.camera.top = d;
             dirLight.shadow.camera.bottom = -d;
             scene.add(dirLight);
+
+            // 角色轮廓光：勾勒人物发丝与肩部轮廓，夜景/黄昏下保持人物清晰可读
+            characterRimLight = new THREE.PointLight(0xbae6fd, 1.35, 16);
+            scene.add(characterRimLight);
         }
 
         // ==================== 生成水面波纹纹理 ====================
@@ -1572,7 +1576,7 @@
             }
         }
 
-        // ==================== 高写实解剖比例与关节层级 3D 角色模型 ====================
+        // ==================== 常规比例 3D 角色模型（红T恤 + 卡其裤 + 运动鞋 + 背包） ====================
         function buildRealisticCharacter() {
             playerGroup = new THREE.Group();
             playerGroup.position.copy(state.player.pos);
@@ -1580,55 +1584,56 @@
             bodyRig = new THREE.Group();
             playerGroup.add(bodyRig);
 
+            // 自然肤色、红T恤、卡其休闲裤、深棕短发与白运动鞋
             const skinMat = new THREE.MeshStandardMaterial({
-                color: 0xf4c7a1,
-                roughness: 0.48,
+                color: 0xf3c59f,
+                roughness: 0.5,
                 metalness: 0.02
             });
             const lipMat = new THREE.MeshStandardMaterial({
-                color: 0xd98a7c,
-                roughness: 0.52,
+                color: 0xd48578,
+                roughness: 0.55,
                 metalness: 0.02
             });
             const hairMainMat = new THREE.MeshStandardMaterial({
-                color: 0x141821,
-                roughness: 0.65,
-                metalness: 0.18
-            });
-            const hairHighlightMat = new THREE.MeshStandardMaterial({
-                color: 0x262f40,
-                roughness: 0.55,
-                metalness: 0.25
-            });
-            const coatMat = new THREE.MeshStandardMaterial({
-                color: 0x1e293b,
-                roughness: 0.58,
-                metalness: 0.08
-            });
-            const innerShirtMat = new THREE.MeshStandardMaterial({
-                color: 0xf1f5f9,
-                roughness: 0.65,
-                metalness: 0.02
-            });
-            const accentCoralMat = new THREE.MeshStandardMaterial({
-                color: 0xf43f5e,
-                roughness: 0.45,
+                color: 0x2b1d14,
+                roughness: 0.68,
                 metalness: 0.12
             });
-            const pantsMat = new THREE.MeshStandardMaterial({
-                color: 0x27303f,
-                roughness: 0.76,
-                metalness: 0.06
+            const hairHighlightMat = new THREE.MeshStandardMaterial({
+                color: 0x453022,
+                roughness: 0.58,
+                metalness: 0.16
+            });
+            const teeRedMat = new THREE.MeshStandardMaterial({
+                color: 0xdc2626,
+                roughness: 0.64,
+                metalness: 0.05
+            });
+            const collarMat = new THREE.MeshStandardMaterial({
+                color: 0xb91c1c,
+                roughness: 0.7,
+                metalness: 0.05
+            });
+            const accentStripeMat = new THREE.MeshStandardMaterial({
+                color: 0xf8fafc,
+                roughness: 0.5,
+                metalness: 0.08
+            });
+            const chinosMat = new THREE.MeshStandardMaterial({
+                color: 0xc2a878,
+                roughness: 0.78,
+                metalness: 0.04
             });
             const shoeUpperMat = new THREE.MeshStandardMaterial({
                 color: 0xf8fafc,
-                roughness: 0.42,
-                metalness: 0.12
+                roughness: 0.45,
+                metalness: 0.1
             });
             const shoeSoleMat = new THREE.MeshStandardMaterial({
-                color: 0x0f172a,
+                color: 0x334155,
                 roughness: 0.85,
-                metalness: 0.1
+                metalness: 0.12
             });
             const watchMetalMat = new THREE.MeshStandardMaterial({
                 color: 0xcbd5e1,
@@ -1637,316 +1642,311 @@
             });
 
             pelvisGroup = new THREE.Group();
-            pelvisGroup.position.set(0, 1.02, 0);
+            pelvisGroup.position.set(0, 1.0, 0);
             bodyRig.add(pelvisGroup);
 
             const pelvisMesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.24, 0.22, 0.22, 20),
-                pantsMat
+                new THREE.CylinderGeometry(0.225, 0.205, 0.21, 20),
+                chinosMat
             );
-            pelvisMesh.scale.set(1.18, 1, 0.82);
+            pelvisMesh.scale.set(1.14, 1, 0.82);
             pelvisMesh.castShadow = true;
             pelvisGroup.add(pelvisMesh);
 
             const beltMesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.246, 0.246, 0.055, 20),
+                new THREE.CylinderGeometry(0.232, 0.232, 0.05, 20),
                 shoeSoleMat
             );
-            beltMesh.scale.set(1.19, 1, 0.83);
-            beltMesh.position.y = 0.09;
+            beltMesh.scale.set(1.15, 1, 0.83);
+            beltMesh.position.y = 0.085;
             pelvisGroup.add(beltMesh);
 
             const buckle = new THREE.Mesh(
-                new THREE.BoxGeometry(0.07, 0.06, 0.03),
+                new THREE.BoxGeometry(0.065, 0.055, 0.028),
                 watchMetalMat
             );
-            buckle.position.set(0, 0.09, 0.205);
+            buckle.position.set(0, 0.085, 0.195);
             pelvisGroup.add(buckle);
 
             chestGroup = new THREE.Group();
-            chestGroup.position.set(0, 0.11, 0);
+            chestGroup.position.set(0, 0.105, 0);
             pelvisGroup.add(chestGroup);
 
             const waist = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.23, 0.21, 0.24, 20),
-                coatMat
+                new THREE.CylinderGeometry(0.215, 0.20, 0.23, 20),
+                teeRedMat
             );
-            waist.scale.set(1.14, 1, 0.78);
-            waist.position.y = 0.12;
+            waist.scale.set(1.12, 1, 0.78);
+            waist.position.y = 0.115;
             waist.castShadow = true;
             chestGroup.add(waist);
 
             const chest = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.29, 0.23, 0.56, 22),
-                coatMat
+                new THREE.CylinderGeometry(0.265, 0.215, 0.52, 22),
+                teeRedMat
             );
-            chest.scale.set(1.22, 1, 0.76);
-            chest.position.y = 0.48;
+            chest.scale.set(1.18, 1, 0.76);
+            chest.position.y = 0.45;
             chest.castShadow = true;
             chestGroup.add(chest);
 
-            const innerV = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.11, 0.06, 0.42, 14),
-                innerShirtMat
+            const collarRing = new THREE.Mesh(
+                new THREE.TorusGeometry(0.095, 0.018, 10, 20),
+                collarMat
             );
-            innerV.scale.set(1.0, 1, 0.35);
-            innerV.position.set(0, 0.54, 0.195);
-            chestGroup.add(innerV);
+            collarRing.rotation.x = Math.PI / 2 - 0.15;
+            collarRing.position.set(0, 0.70, 0.04);
+            chestGroup.add(collarRing);
 
-            const stripeL = new THREE.Mesh(
-                new THREE.BoxGeometry(0.025, 0.46, 0.02),
-                accentCoralMat
+            const chestBadge = new THREE.Mesh(
+                new THREE.BoxGeometry(0.11, 0.03, 0.015),
+                accentStripeMat
             );
-            stripeL.position.set(-0.14, 0.52, 0.205);
-            stripeL.rotation.z = -0.06;
-            chestGroup.add(stripeL);
-
-            const stripeR = stripeL.clone();
-            stripeR.position.x = 0.14;
-            stripeR.rotation.z = 0.06;
-            chestGroup.add(stripeR);
-
-            const clavicle = new THREE.Mesh(
-                new THREE.BoxGeometry(0.58, 0.07, 0.14),
-                coatMat
-            );
-            clavicle.position.set(0, 0.72, 0.03);
-            chestGroup.add(clavicle);
+            chestBadge.position.set(0.09, 0.56, 0.195);
+            chestGroup.add(chestBadge);
 
             backpackGroup = new THREE.Group();
-            backpackGroup.position.set(0, 0.48, -0.22);
+            backpackGroup.position.set(0, 0.45, -0.20);
             const packBody = new THREE.Mesh(
-                new THREE.BoxGeometry(0.38, 0.48, 0.15),
+                new THREE.BoxGeometry(0.35, 0.44, 0.14),
                 new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.65, metalness: 0.2 })
             );
             packBody.castShadow = true;
             backpackGroup.add(packBody);
 
             const packPocket = new THREE.Mesh(
-                new THREE.BoxGeometry(0.30, 0.24, 0.05),
+                new THREE.BoxGeometry(0.28, 0.22, 0.045),
                 new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.6, metalness: 0.25 })
             );
-            packPocket.position.set(0, -0.06, -0.085);
+            packPocket.position.set(0, -0.05, -0.078);
             backpackGroup.add(packPocket);
 
-            [-0.14, 0.14].forEach(sx => {
+            [-0.13, 0.13].forEach(sx => {
                 const strap = new THREE.Mesh(
-                    new THREE.TorusGeometry(0.18, 0.025, 8, 16, Math.PI),
+                    new THREE.TorusGeometry(0.165, 0.022, 8, 16, Math.PI),
                     shoeSoleMat
                 );
-                strap.position.set(sx, 0.14, 0.08);
+                strap.position.set(sx, 0.13, 0.075);
                 strap.rotation.y = Math.PI / 2;
                 backpackGroup.add(strap);
             });
             chestGroup.add(backpackGroup);
 
             const neck = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.072, 0.088, 0.16, 16),
+                new THREE.CylinderGeometry(0.068, 0.082, 0.14, 16),
                 skinMat
             );
-            neck.position.set(0, 0.80, 0.01);
+            neck.position.set(0, 0.75, 0.01);
             neck.castShadow = true;
             chestGroup.add(neck);
 
             headGroup = new THREE.Group();
-            headGroup.position.set(0, 0.88, 0.02);
+            headGroup.position.set(0, 0.82, 0.02);
             chestGroup.add(headGroup);
 
             const cranium = new THREE.Mesh(
-                new THREE.SphereGeometry(0.185, 24, 22),
+                new THREE.SphereGeometry(0.178, 24, 22),
                 skinMat
             );
-            cranium.scale.set(0.90, 1.08, 0.98);
-            cranium.position.y = 0.19;
+            cranium.scale.set(0.90, 1.06, 0.98);
+            cranium.position.y = 0.18;
             cranium.castShadow = true;
             headGroup.add(cranium);
 
             const jaw = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.145, 0.095, 0.13, 18),
+                new THREE.CylinderGeometry(0.138, 0.09, 0.12, 18),
                 skinMat
             );
             jaw.scale.set(0.92, 1.0, 0.94);
-            jaw.position.set(0, 0.09, 0.025);
+            jaw.position.set(0, 0.085, 0.024);
             headGroup.add(jaw);
 
             const noseBridge = new THREE.Mesh(
-                new THREE.BoxGeometry(0.032, 0.065, 0.045),
+                new THREE.BoxGeometry(0.03, 0.06, 0.042),
                 skinMat
             );
-            noseBridge.position.set(0, 0.175, 0.178);
+            noseBridge.position.set(0, 0.168, 0.172);
             noseBridge.rotation.x = -0.22;
             headGroup.add(noseBridge);
 
             const noseTip = new THREE.Mesh(
-                new THREE.SphereGeometry(0.024, 12, 12),
+                new THREE.SphereGeometry(0.022, 12, 12),
                 skinMat
             );
-            noseTip.position.set(0, 0.152, 0.195);
+            noseTip.position.set(0, 0.146, 0.188);
             headGroup.add(noseTip);
 
-            const browMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.7 });
+            const browMat = new THREE.MeshStandardMaterial({ color: 0x2b1d14, roughness: 0.7 });
             const scleraMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
             const irisMat = new THREE.MeshBasicMaterial({ color: 0x1e293b });
             const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
             [-1, 1].forEach(side => {
                 const brow = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.055, 0.014, 0.022),
+                    new THREE.BoxGeometry(0.052, 0.013, 0.02),
                     browMat
                 );
-                brow.position.set(side * 0.062, 0.222, 0.168);
-                brow.rotation.z = side * -0.08;
-                brow.rotation.x = -0.15;
+                brow.position.set(side * 0.058, 0.212, 0.162);
+                brow.rotation.z = side * -0.07;
+                brow.rotation.x = -0.14;
                 headGroup.add(brow);
 
                 const eyeWhite = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.024, 12, 12),
+                    new THREE.SphereGeometry(0.022, 12, 12),
                     scleraMat
                 );
                 eyeWhite.scale.set(1.15, 0.85, 0.6);
-                eyeWhite.position.set(side * 0.060, 0.192, 0.166);
+                eyeWhite.position.set(side * 0.056, 0.184, 0.16);
                 headGroup.add(eyeWhite);
 
                 const pupil = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.013, 10, 10),
+                    new THREE.SphereGeometry(0.012, 10, 10),
                     irisMat
                 );
-                pupil.position.set(side * 0.060, 0.192, 0.177);
+                pupil.position.set(side * 0.056, 0.184, 0.17);
                 headGroup.add(pupil);
 
                 const glint = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.005, 8, 8),
+                    new THREE.SphereGeometry(0.0045, 8, 8),
                     glintMat
                 );
-                glint.position.set(side * 0.065, 0.196, 0.184);
+                glint.position.set(side * 0.061, 0.188, 0.177);
                 headGroup.add(glint);
 
                 const ear = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.042, 12, 12),
+                    new THREE.SphereGeometry(0.04, 12, 12),
                     skinMat
                 );
-                ear.scale.set(0.45, 1.15, 0.82);
-                ear.position.set(side * 0.166, 0.182, 0.005);
+                ear.scale.set(0.45, 1.12, 0.8);
+                ear.position.set(side * 0.16, 0.175, 0.005);
                 headGroup.add(ear);
             });
 
             const mouth = new THREE.Mesh(
-                new THREE.BoxGeometry(0.052, 0.014, 0.022),
+                new THREE.BoxGeometry(0.048, 0.013, 0.02),
                 lipMat
             );
-            mouth.position.set(0, 0.112, 0.172);
+            mouth.position.set(0, 0.106, 0.166);
             headGroup.add(mouth);
 
             const hairCrown = new THREE.Mesh(
-                new THREE.SphereGeometry(0.196, 24, 20, 0, Math.PI * 2, 0, Math.PI * 0.64),
+                new THREE.SphereGeometry(0.188, 24, 20, 0, Math.PI * 2, 0, Math.PI * 0.64),
                 hairMainMat
             );
-            hairCrown.scale.set(0.94, 1.08, 1.04);
-            hairCrown.position.set(0, 0.205, -0.008);
+            hairCrown.scale.set(0.94, 1.06, 1.03);
+            hairCrown.position.set(0, 0.195, -0.008);
             hairCrown.rotation.x = -0.12;
             hairCrown.castShadow = true;
             headGroup.add(hairCrown);
 
             for (let i = 0; i < 5; i++) {
                 const strand = new THREE.Mesh(
-                    new THREE.ConeGeometry(0.036, 0.11, 8),
+                    new THREE.ConeGeometry(0.034, 0.1, 8),
                     i % 2 === 0 ? hairMainMat : hairHighlightMat
                 );
-                strand.position.set(-0.10 + i * 0.052, 0.275 - i * 0.006, 0.155);
+                strand.position.set(-0.095 + i * 0.048, 0.262 - i * 0.005, 0.148);
                 strand.rotation.z = Math.PI + 0.18 - i * 0.05;
                 strand.rotation.x = 0.25;
                 headGroup.add(strand);
             }
 
             const backHair = new THREE.Mesh(
-                new THREE.SphereGeometry(0.182, 18, 16),
+                new THREE.SphereGeometry(0.175, 18, 16),
                 hairHighlightMat
             );
-            backHair.scale.set(0.92, 0.95, 0.72);
-            backHair.position.set(0, 0.185, -0.075);
+            backHair.scale.set(0.92, 0.94, 0.72);
+            backHair.position.set(0, 0.175, -0.072);
             headGroup.add(backHair);
 
             function buildArm(side) {
                 const shoulderPivot = new THREE.Group();
-                shoulderPivot.position.set(side * 0.34, 0.68, 0.01);
+                shoulderPivot.position.set(side * 0.31, 0.64, 0.01);
 
                 const deltoid = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.088, 14, 14),
-                    coatMat
+                    new THREE.SphereGeometry(0.076, 14, 14),
+                    teeRedMat
                 );
                 deltoid.castShadow = true;
                 shoulderPivot.add(deltoid);
 
-                const upperArm = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.072, 0.062, 0.30, 14),
-                    coatMat
+                const sleeve = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.068, 0.062, 0.16, 14),
+                    teeRedMat
                 );
-                upperArm.position.y = -0.15;
-                upperArm.castShadow = true;
-                shoulderPivot.add(upperArm);
+                sleeve.position.y = -0.08;
+                sleeve.castShadow = true;
+                shoulderPivot.add(sleeve);
 
-                const cuff = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.064, 0.062, 0.035, 14),
-                    accentCoralMat
+                const sleeveHem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.063, 0.063, 0.022, 14),
+                    collarMat
                 );
-                cuff.position.y = -0.295;
-                shoulderPivot.add(cuff);
+                sleeveHem.position.y = -0.155;
+                shoulderPivot.add(sleeveHem);
+
+                const upperSkin = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.056, 0.05, 0.14, 14),
+                    skinMat
+                );
+                upperSkin.position.y = -0.22;
+                upperSkin.castShadow = true;
+                shoulderPivot.add(upperSkin);
 
                 const elbowPivot = new THREE.Group();
-                elbowPivot.position.set(0, -0.31, 0);
+                elbowPivot.position.set(0, -0.295, 0);
                 shoulderPivot.add(elbowPivot);
 
                 const elbowJoint = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.058, 12, 12),
-                    coatMat
+                    new THREE.SphereGeometry(0.052, 12, 12),
+                    skinMat
                 );
                 elbowPivot.add(elbowJoint);
 
                 const forearm = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.058, 0.045, 0.27, 14),
+                    new THREE.CylinderGeometry(0.052, 0.042, 0.26, 14),
                     skinMat
                 );
-                forearm.position.y = -0.14;
+                forearm.position.y = -0.135;
                 forearm.castShadow = true;
                 elbowPivot.add(forearm);
 
                 if (side < 0) {
                     const watchBand = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.049, 0.049, 0.035, 14),
+                        new THREE.CylinderGeometry(0.045, 0.045, 0.032, 14),
                         shoeSoleMat
                     );
-                    watchBand.position.y = -0.24;
+                    watchBand.position.y = -0.23;
                     elbowPivot.add(watchBand);
 
                     const watchCase = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.022, 0.042, 0.036),
+                        new THREE.BoxGeometry(0.02, 0.038, 0.034),
                         watchMetalMat
                     );
-                    watchCase.position.set(-0.048, -0.24, 0);
+                    watchCase.position.set(-0.044, -0.23, 0);
                     elbowPivot.add(watchCase);
                 }
 
                 const palm = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.075, 0.095, 0.042),
+                    new THREE.BoxGeometry(0.068, 0.088, 0.038),
                     skinMat
                 );
-                palm.position.set(0, -0.32, 0.01);
+                palm.position.set(0, -0.305, 0.01);
                 palm.castShadow = true;
                 elbowPivot.add(palm);
 
                 const fingers = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.068, 0.072, 0.034),
+                    new THREE.BoxGeometry(0.062, 0.066, 0.032),
                     skinMat
                 );
-                fingers.position.set(0, -0.395, 0.012);
+                fingers.position.set(0, -0.375, 0.012);
                 fingers.rotation.x = 0.18;
                 elbowPivot.add(fingers);
 
                 const thumb = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.026, 0.055, 0.028),
+                    new THREE.BoxGeometry(0.024, 0.05, 0.025),
                     skinMat
                 );
-                thumb.position.set(-side * 0.042, -0.345, 0.026);
+                thumb.position.set(-side * 0.038, -0.33, 0.024);
                 thumb.rotation.z = side * -0.35;
                 elbowPivot.add(thumb);
 
@@ -1964,70 +1964,70 @@
 
             function buildLeg(side) {
                 const hipPivot = new THREE.Group();
-                hipPivot.position.set(side * 0.125, -0.06, 0);
+                hipPivot.position.set(side * 0.118, -0.055, 0);
 
                 const hipJoint = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.095, 14, 14),
-                    pantsMat
+                    new THREE.SphereGeometry(0.09, 14, 14),
+                    chinosMat
                 );
                 hipPivot.add(hipJoint);
 
                 const thigh = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.105, 0.082, 0.43, 16),
-                    pantsMat
+                    new THREE.CylinderGeometry(0.098, 0.078, 0.42, 16),
+                    chinosMat
                 );
-                thigh.position.y = -0.215;
+                thigh.position.y = -0.21;
                 thigh.castShadow = true;
                 hipPivot.add(thigh);
 
                 const kneePivot = new THREE.Group();
-                kneePivot.position.set(0, -0.44, 0);
+                kneePivot.position.set(0, -0.43, 0);
                 hipPivot.add(kneePivot);
 
                 const kneeCap = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.078, 14, 14),
-                    pantsMat
+                    new THREE.SphereGeometry(0.074, 14, 14),
+                    chinosMat
                 );
                 kneeCap.scale.set(0.95, 1.0, 1.08);
                 kneeCap.position.z = 0.012;
                 kneePivot.add(kneeCap);
 
                 const calf = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.076, 0.056, 0.41, 16),
-                    pantsMat
+                    new THREE.CylinderGeometry(0.072, 0.054, 0.405, 16),
+                    chinosMat
                 );
-                calf.position.y = -0.205;
+                calf.position.y = -0.202;
                 calf.castShadow = true;
                 kneePivot.add(calf);
 
                 const ankle = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.052, 0.056, 0.05, 12),
+                    new THREE.CylinderGeometry(0.05, 0.054, 0.048, 12),
                     shoeSoleMat
                 );
-                ankle.position.y = -0.415;
+                ankle.position.y = -0.41;
                 kneePivot.add(ankle);
 
                 const shoeSole = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.135, 0.042, 0.285),
+                    new THREE.BoxGeometry(0.13, 0.04, 0.28),
                     shoeSoleMat
                 );
-                shoeSole.position.set(0, -0.445, 0.045);
+                shoeSole.position.set(0, -0.44, 0.042);
                 shoeSole.castShadow = true;
                 kneePivot.add(shoeSole);
 
                 const shoeBody = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.128, 0.075, 0.265),
+                    new THREE.BoxGeometry(0.124, 0.072, 0.26),
                     shoeUpperMat
                 );
-                shoeBody.position.set(0, -0.405, 0.042);
+                shoeBody.position.set(0, -0.402, 0.04);
                 shoeBody.castShadow = true;
                 kneePivot.add(shoeBody);
 
                 const shoeStripe = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.134, 0.024, 0.16),
-                    accentCoralMat
+                    new THREE.BoxGeometry(0.13, 0.022, 0.15),
+                    teeRedMat
                 );
-                shoeStripe.position.set(0, -0.415, 0.03);
+                shoeStripe.position.set(0, -0.412, 0.028);
                 kneePivot.add(shoeStripe);
 
                 return { hipPivot, kneePivot };
@@ -2066,6 +2066,10 @@
                 hemiLight.intensity = 0.6;
                 dirLight.color.setHex(0x93c5fd);
                 dirLight.intensity = 0.7;
+                if (characterRimLight) {
+                    characterRimLight.color.setHex(0x93c5fd);
+                    characterRimLight.intensity = 1.45;
+                }
                 pearlLights.forEach(l => l.intensity = 2.8);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.85);
                 if (riverMat) {
@@ -2080,6 +2084,10 @@
                 hemiLight.intensity = 0.88;
                 dirLight.color.setHex(0xfb923c);
                 dirLight.intensity = 1.7;
+                if (characterRimLight) {
+                    characterRimLight.color.setHex(0xfdba74);
+                    characterRimLight.intensity = 1.1;
+                }
                 pearlLights.forEach(l => l.intensity = 1.6);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.45);
                 if (riverMat) {
@@ -2094,6 +2102,10 @@
                 hemiLight.intensity = 1.15;
                 dirLight.color.setHex(0xffffff);
                 dirLight.intensity = 2.1;
+                if (characterRimLight) {
+                    characterRimLight.color.setHex(0xffffff);
+                    characterRimLight.intensity = 0.65;
+                }
                 pearlLights.forEach(l => l.intensity = 0.3);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.08);
                 if (riverMat) {
@@ -2176,9 +2188,17 @@
             playerGroup.position.copy(p.pos);
             playerGroup.rotation.y = p.yaw;
 
+            if (characterRimLight) {
+                characterRimLight.position.set(
+                    p.pos.x - Math.sin(p.yaw) * 2.4,
+                    p.pos.y + 2.4,
+                    p.pos.z - Math.cos(p.yaw) * 2.4
+                );
+            }
+
             if (!p.onGround) {
                 const jumpFactor = Math.max(-1, Math.min(1, p.vel.y / 11.5));
-                pelvisGroup.position.y = 1.02 + Math.sin(elapsed * 8) * 0.02;
+                pelvisGroup.position.y = 1.0 + Math.sin(elapsed * 8) * 0.02;
                 chestGroup.rotation.x = -jumpFactor * 0.14;
                 leftHipPivot.rotation.x = -0.52;
                 leftKneePivot.rotation.x = 0.68;
@@ -2201,7 +2221,7 @@
                 const s = Math.sin(p.walkCycle);
                 const c = Math.cos(p.walkCycle);
 
-                pelvisGroup.position.y = 1.02 + Math.abs(c) * (p.isSprinting ? 0.13 : 0.065);
+                pelvisGroup.position.y = 1.0 + Math.abs(c) * (p.isSprinting ? 0.13 : 0.065);
                 pelvisGroup.rotation.y = s * 0.08;
                 chestGroup.rotation.y = -s * 0.14;
                 chestGroup.rotation.x = p.isSprinting ? 0.20 : 0.05;
@@ -2228,7 +2248,7 @@
                 headGroup.rotation.x = -chestGroup.rotation.x * 0.5 + Math.abs(s) * 0.03;
             } else {
                 const breath = Math.sin(elapsed * 2.2);
-                pelvisGroup.position.y += (1.02 - pelvisGroup.position.y) * 0.15;
+                pelvisGroup.position.y += (1.0 - pelvisGroup.position.y) * 0.15;
                 pelvisGroup.rotation.y *= 0.85;
                 chestGroup.rotation.y *= 0.85;
                 chestGroup.rotation.x += (breath * 0.025 - chestGroup.rotation.x) * 0.15;
@@ -2273,7 +2293,7 @@
             const c = state.camera;
 
             if (state.cameraMode === 'first') {
-                const eyePos = new THREE.Vector3(p.x, p.y + 2.02, p.z);
+                const eyePos = new THREE.Vector3(p.x, p.y + 1.98, p.z);
                 camera.position.copy(eyePos);
 
                 const lookDir = new THREE.Vector3(
@@ -2283,7 +2303,7 @@
                 );
                 camera.lookAt(eyePos.clone().add(lookDir));
             } else {
-                const target = new THREE.Vector3(p.x, p.y + 1.55, p.z);
+                const target = new THREE.Vector3(p.x, p.y + 1.52, p.z);
                 const offsetX = Math.sin(c.yaw) * Math.cos(c.pitch) * c.distance;
                 const offsetY = Math.sin(c.pitch) * c.distance;
                 const offsetZ = Math.cos(c.yaw) * Math.cos(c.pitch) * c.distance;
@@ -2517,7 +2537,7 @@
 
         // ==================== 视角俯仰角更新辅助 ====================
         // 第一人称：deltaY < 0（向上滑动/拖动）时 pitch 增大（向上看）；deltaY > 0（向下滑动/拖动）时 pitch 减小（向下看）
-        // 第三人称：deltaY < 0（向上滑动/拖动）时 pitch 减小（相机降低，视线更朝上）；deltaY > 0（向下滑动/拖动）时 pitch 增大（相机升高，视线更朝下）
+        // 第三人称：pitch 增大使相机位置升高（从更高处俯视/看向上方），pitch 减小使相机降低
         function applyPitchDelta(deltaY) {
             const pitchSign = state.cameraMode === 'first' ? -1 : 1;
             state.camera.pitch = Math.max(
