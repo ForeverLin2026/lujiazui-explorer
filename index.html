@@ -1574,8 +1574,10 @@
             p.vel.y -= 28 * dt;
             p.pos.y += p.vel.y * dt;
 
-            if (p.pos.y <= 0) {
-                p.pos.y = 0;
+            // 落地高度跟随地面：走上台阶时站到台阶顶面，走下台阶时落回低处
+            const groundY = getGroundHeight(p.pos.x, p.pos.z);
+            if (p.pos.y <= groundY) {
+                p.pos.y = groundY;
                 p.vel.y = 0;
                 p.onGround = true;
             }
@@ -1624,6 +1626,19 @@
             }
 
             playerGroup.visible = state.cameraMode === 'third';
+        }
+
+        // 地面高度：让人能走上台阶/广场/亲水步道/草坪，而不是脚陷进去
+        // 广场：中心(0,0)半径36，顶面 y=0.10；亲水步道：x[-68,-58]，顶面 y=0.30；
+        // 中心绿地草坪：中心(16,-42)半径13.5，顶面 y=0.16；其余平地 y=0。
+        function getGroundHeight(x, z) {
+            let h = 0;
+            const dx = x - 0, dz = z - 0;
+            if (dx * dx + dz * dz <= 36 * 36) h = Math.max(h, 0.10);
+            if (x >= -68 && x <= -58 && z >= -170 && z <= 170) h = Math.max(h, 0.30);
+            const lx = x - 16, lz = z - (-42);
+            if (lx * lx + lz * lz <= 13.5 * 13.5) h = Math.max(h, 0.16);
+            return h;
         }
 
         function checkCollision(x, z) {
@@ -2026,19 +2041,19 @@
             });
 
             document.getElementById('teleport-pearl-btn').addEventListener('click', () => {
-                state.player.pos.set(0, 0, 32);
+                state.player.pos.set(0, getGroundHeight(0, 32), 32);
                 state.camera.yaw = 0;
             });
             document.getElementById('teleport-bund-btn').addEventListener('click', () => {
-                state.player.pos.set(-58, 0, 12);
+                state.player.pos.set(-58, getGroundHeight(-58, 12), 12);
                 state.camera.yaw = -Math.PI / 2.4;
             });
             document.getElementById('teleport-park-btn').addEventListener('click', () => {
-                state.player.pos.set(16, 0, -33);
+                state.player.pos.set(16, getGroundHeight(16, -33), -33);
                 state.camera.yaw = 0;
             });
             document.getElementById('teleport-ferry-btn').addEventListener('click', () => {
-                state.player.pos.set(-56, 0, -48);
+                state.player.pos.set(-56, getGroundHeight(-56, -48), -48);
                 state.camera.yaw = -Math.PI / 2.2;
             });
 
