@@ -336,7 +336,7 @@
         let scene, camera, renderer, clock;
         let ambientLight, dirLight, hemiLight, characterRimLight, characterFillLight;
         let pearlTowerGroup, pearlLights = [], pearlRings = [];
-        let playerGroup, glbCharacterPivot, characterMixer = null, characterActions = {};
+        let playerGroup, glbCharacterPivot, characterMixer = null, characterActions = {}, currentCharacterAction = null;
         let riverMesh, riverBasePositions, riverBumpTex, riverMat;
         let boats = [], streetLampBulbs = [], buildingWindowMats = [];
         let cityCars = [], fountainWaterRings = [], energyOrbs = [];
@@ -1358,6 +1358,15 @@
         }
 
         // ==================== 加载 GLB 3D 主人公模型 ====================
+        // 切换主角动画片段（待机/走路/跑步），带淡入淡出；片段不存在时保持当前动作
+        function switchCharacterAction(key) {
+            const next = characterActions[key];
+            if (!next || currentCharacterAction === next) return;
+            if (currentCharacterAction) currentCharacterAction.fadeOut(0.15);
+            next.reset().fadeIn(0.15).play();
+            currentCharacterAction = next;
+        }
+
         function loadGlbProtagonist(modelUrl) {
             playerGroup = new THREE.Group();
             playerGroup.position.copy(state.player.pos);
@@ -1414,6 +1423,7 @@
                         const idleKey = Object.keys(characterActions).find(k => k.includes('idle')) || Object.keys(characterActions)[0];
                         if (idleKey && characterActions[idleKey]) {
                             characterActions[idleKey].play();
+                            currentCharacterAction = characterActions[idleKey];
                         }
                     }
                 },
@@ -1590,6 +1600,10 @@
 
             if (glbCharacterPivot) {
                 if (characterMixer) {
+                    // 按状态切换动画：站立播待机、走路播走、跑步播跑；跳跃时保持当前片段
+                    if (p.onGround) {
+                        switchCharacterAction(p.isMoving ? (p.isSprinting ? 'run' : 'walk') : 'idle');
+                    }
                     characterMixer.timeScale = p.isMoving ? (p.isSprinting ? 1.5 : 1.0) : 0.8;
                     characterMixer.update(dt);
                 } else if (!p.onGround) {
