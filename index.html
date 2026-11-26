@@ -1239,6 +1239,9 @@
                     (gltf) => {
                         carContainers.forEach((container) => {
                             const teslaMesh = normalizeGlbVehicle(gltf.scene, 4.9);
+                            // Meshy 特斯拉模型车头朝向模型 -X：normalize 只保证长轴朝 X，
+                            // 须再转 180° 让车头朝向容器 +X，否则 4 条路上的车都是倒着走
+                            teslaMesh.rotation.y = Math.PI;
                             container.add(teslaMesh);
                         });
                     },
