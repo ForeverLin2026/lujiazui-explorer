@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="WaterSystem.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
         
@@ -337,8 +338,9 @@
         let ambientLight, dirLight, hemiLight, characterRimLight, characterFillLight;
         let pearlTowerGroup, pearlLights = [], pearlRings = [];
         let playerGroup, glbCharacterPivot, characterMixer = null, characterActions = {}, currentCharacterAction = null;
-        let riverMesh, riverBasePositions, riverBumpTex, riverMat;
+        let waterSystem = null; // 黄浦江水面：Three.js 水面 + Kelvin 船行尾迹（WaterSystem.js）
         let boats = [], streetLampBulbs = [], buildingWindowMats = [];
+        let roadRingMesh = null, roadNSMesh = null, roadEWMesh = null, lawnPadMesh = null; // 地面贴图（柏油/草地）的挂载点
         let cityCars = [], fountainWaterRings = [], energyOrbs = [];
         let colliders = [];
         let checkpointMeshes = [];
@@ -445,6 +447,7 @@
             buildCheckpoints();
             buildEnergyOrbs();
             loadGlbProtagonist(PROTAGONIST_MODEL_URL);
+            loadGroundTextures(); // 柏油/草地贴图（textures/ 目录，需先上传贴图文件）
 
             applyTimeTheme('night');
             bindEvents();
@@ -476,39 +479,6 @@
 
             characterFillLight = new THREE.PointLight(0xfff7ed, 1.35, 14);
             scene.add(characterFillLight);
-        }
-
-        function createWaterRippleTexture() {
-            const size = 256;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            const img = ctx.createImageData(size, size);
-            const data = img.data;
-
-            for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    const u = (x / size) * Math.PI * 2;
-                    const v = (y / size) * Math.PI * 2;
-                    const h1 = Math.sin(u * 3 + v * 2);
-                    const h2 = Math.cos(u * 5 - v * 4 + 0.8);
-                    const h3 = Math.sin((u + v) * 7 - 1.4);
-                    const val = Math.floor(128 + ((h1 * 0.45 + h2 * 0.35 + h3 * 0.2) * 110));
-                    const idx = (y * size + x) * 4;
-                    data[idx] = val;
-                    data[idx + 1] = val;
-                    data[idx + 2] = val;
-                    data[idx + 3] = 255;
-                }
-            }
-            ctx.putImageData(img, 0, 0);
-
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(28, 46);
-            return tex;
         }
 
         function buildGroundAndRiver() {
@@ -549,16 +519,19 @@
             ringRoad.rotation.x = -Math.PI / 2;
             ringRoad.position.y = 0.03;
             scene.add(ringRoad);
+            roadRingMesh = ringRoad;
 
             const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(14, 280), roadMat);
             roadNS.rotation.x = -Math.PI / 2;
             roadNS.position.set(-42, 0.03, 0);
             scene.add(roadNS);
+            roadNSMesh = roadNS;
 
             const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(220, 16), roadMat);
             roadEW.rotation.x = -Math.PI / 2;
             roadEW.position.set(70, 0.03, 45);
             scene.add(roadEW);
+            roadEWMesh = roadEW;
 
             for (let z = -120; z <= 120; z += 12) {
                 const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 5), stripeMat);
@@ -587,22 +560,20 @@
             scene.add(topRail);
             colliders.push({ minX: -75, maxX: -67.5, minZ: -170, maxZ: 170 });
 
-            const riverGeo = new THREE.PlaneGeometry(240, 420, 128, 160);
-            riverBasePositions = new Float32Array(riverGeo.attributes.position.array);
-            riverBumpTex = createWaterRippleTexture();
-
-            riverMat = new THREE.MeshStandardMaterial({
-                color: 0x07243d,
-                roughness: 0.14,
-                metalness: 0.88,
-                bumpMap: riverBumpTex,
-                bumpScale: 0.22
+            // 黄浦江水面：WaterSystem（平静波纹 + Kelvin 船行尾迹），替代旧的 riverMesh。
+            // 水域范围与旧河面一致：x ∈ [-308, -68]，z ∈ [-210, 210]。
+            waterSystem = new WaterSystem(renderer, {
+                minX: -308, maxX: -68, minZ: -210, maxZ: 210,
+                baseColor: 0x07243d, // 夜间江水色；白天/黄昏由 applyTimeTheme 改
+                skyColor: 0x0a1626,
+                wakeRes: 512,
+                segments: 128,
+                fadeTime: 12,
+                wakeHeight: 0.16
             });
-            riverMesh = new THREE.Mesh(riverGeo, riverMat);
-            riverMesh.rotation.x = -Math.PI / 2;
-            riverMesh.position.set(-188, -0.55, 0);
-            riverMesh.receiveShadow = true;
-            scene.add(riverMesh);
+            waterSystem.mesh.position.y = -0.55;
+            waterSystem.mesh.receiveShadow = true;
+            scene.add(waterSystem.mesh);
 
             const bundGroup = new THREE.Group();
             const bundBuildingMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
@@ -623,6 +594,62 @@
             createRiverBoats();
         }
 
+        // 地面贴图：柏油马路 / 草地（albedo + roughness + normal，2K 无缝）。
+        // 贴图文件在仓库的 textures/ 目录（由 Lin 上传）；没传之前保持纯色，不报错。
+        let groundTex = null;
+        function loadGroundTextures() {
+            const manager = new THREE.LoadingManager();
+            const loader = new THREE.TextureLoader(manager);
+            const tex = (url) => {
+                const t = loader.load(url);
+                t.wrapS = THREE.RepeatWrapping;
+                t.wrapT = THREE.RepeatWrapping;
+                return t;
+            };
+            groundTex = {
+                asphalt: {
+                    map: tex('textures/asphalt_albedo.jpg'),
+                    rough: tex('textures/asphalt_roughness.png'),
+                    normal: tex('textures/asphalt_normal.png')
+                },
+                grass: {
+                    map: tex('textures/grass_albedo.jpg'),
+                    rough: tex('textures/grass_roughness.png'),
+                    normal: tex('textures/grass_normal.png')
+                }
+            };
+            // 把一组贴图挂到一个 mesh 上（每条路/草坪各自克隆纹理、各自设 repeat）。
+            const applySet = (mesh, set, rx, ry) => {
+                if (!mesh || !set || !set.map.image) return; // albedo 没到（未上传）就不挂，保持纯色
+                const m = mesh.material.clone();
+                m.map = set.map.clone();
+                m.map.repeat.set(rx, ry);
+                m.map.needsUpdate = true;
+                if (set.rough.image) {
+                    m.roughnessMap = set.rough.clone();
+                    m.roughnessMap.repeat.set(rx, ry);
+                    m.roughnessMap.needsUpdate = true;
+                    m.roughness = 1.0; // 粗糙度完全由 roughnessMap 控制
+                }
+                if (set.normal.image) {
+                    m.normalMap = set.normal.clone();
+                    m.normalMap.repeat.set(rx, ry);
+                    m.normalMap.needsUpdate = true;
+                    m.normalScale.set(0.9, 0.9);
+                }
+                m.color.setHex(0xffffff); // 让 albedo 本色显示（不再乘原纯色）
+                m.needsUpdate = true;
+                mesh.material = m;
+            };
+            manager.onLoad = () => {
+                applySet(roadRingMesh, groundTex.asphalt, 19, 19); // 环路：按直径 96m，每 5m 一块
+                applySet(roadNSMesh, groundTex.asphalt, 3, 56);    // 南北路 14x280
+                applySet(roadEWMesh, groundTex.asphalt, 44, 3);    // 东西路 220x16
+                applySet(lawnPadMesh, groundTex.grass, 5, 5);      // 草坪圆盘直径约 27m
+            };
+            manager.onError = (url) => console.warn('[ground] 贴图缺失（请确认已上传到仓库 textures/）:', url);
+        }
+
         function createRiverBoats() {
             const accentColors = [0xec4899, 0x06b6d4, 0xf59e0b];
             const hullWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35, metalness: 0.25 });
@@ -636,12 +663,6 @@
                 metalness: 0.9
             });
             const railMetalMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.25, metalness: 0.85 });
-            const wakeMat = new THREE.MeshBasicMaterial({
-                color: 0xe0f2fe,
-                transparent: true,
-                opacity: 0.35,
-                side: THREE.DoubleSide
-            });
 
             for (let i = 0; i < 3; i++) {
                 const boat = new THREE.Group();
@@ -726,12 +747,7 @@
                 mastLight.position.set(0, 8.85, 2.4);
                 boat.add(mastLight);
 
-                const wakeGeo = new THREE.PlaneGeometry(4.4, 9.5);
-                wakeGeo.rotateX(-Math.PI / 2);
-                const wakeMesh = new THREE.Mesh(wakeGeo, wakeMat);
-                wakeMesh.position.set(0, 0.08, -14.5);
-                boat.add(wakeMesh);
-
+                // 注：船尾不再挂假尾迹平面，真实 Kelvin 尾迹由 WaterSystem 画在水面上。
                 if (dir < 0) boat.rotation.y = Math.PI;
                 boat.position.set(-92 - i * 24, -0.45, (i - 1) * 90);
                 scene.add(boat);
@@ -755,6 +771,7 @@
             lawnPad.position.y = 0.08;
             lawnPad.receiveShadow = true;
             parkGroup.add(lawnPad);
+            lawnPadMesh = lawnPad;
 
             const fountainRim = new THREE.Mesh(
                 new THREE.TorusGeometry(4.2, 0.36, 12, 32),
@@ -1464,10 +1481,9 @@
                 }
                 pearlLights.forEach(l => l.intensity = 2.8);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.85);
-                if (riverMat) {
-                    riverMat.color.setHex(0x07243d);
-                    riverMat.roughness = 0.14;
-                    riverMat.bumpScale = 0.24;
+                if (waterSystem) {
+                    waterSystem.waterUniforms.uBaseColor.value.setHex(0x07243d);
+                    waterSystem.waterUniforms.uSkyColor.value.setHex(0x0a1626);
                 }
             } else if (mode === 'sunset') {
                 scene.background = new THREE.Color(0x3b1d4a);
@@ -1486,10 +1502,9 @@
                 }
                 pearlLights.forEach(l => l.intensity = 1.6);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.45);
-                if (riverMat) {
-                    riverMat.color.setHex(0x1b2845);
-                    riverMat.roughness = 0.18;
-                    riverMat.bumpScale = 0.22;
+                if (waterSystem) {
+                    waterSystem.waterUniforms.uBaseColor.value.setHex(0x1b2845);
+                    waterSystem.waterUniforms.uSkyColor.value.setHex(0x4c1d4b);
                 }
             } else if (mode === 'day') {
                 scene.background = new THREE.Color(0x60a5fa);
@@ -1508,10 +1523,9 @@
                 }
                 pearlLights.forEach(l => l.intensity = 0.3);
                 buildingWindowMats.forEach(m => m.emissiveIntensity = 0.08);
-                if (riverMat) {
-                    riverMat.color.setHex(0x0c4a6e);
-                    riverMat.roughness = 0.22;
-                    riverMat.bumpScale = 0.18;
+                if (waterSystem) {
+                    waterSystem.waterUniforms.uBaseColor.value.setHex(0x0c4a6e);
+                    waterSystem.waterUniforms.uSkyColor.value.setHex(0x9fc8e8);
                 }
             }
         }
@@ -1681,24 +1695,16 @@
         }
 
         function updateWorldAnimations(elapsed, dt) {
-            if (riverMesh && riverBasePositions) {
-                const posAttr = riverMesh.geometry.attributes.position;
-                const arr = posAttr.array;
-                for (let i = 0; i < arr.length; i += 3) {
-                    const bx = riverBasePositions[i];
-                    const by = riverBasePositions[i + 1];
-                    const wave1 = Math.sin(bx * 0.085 + elapsed * 1.9) * Math.cos(by * 0.065 + elapsed * 1.4) * 0.28;
-                    const wave2 = Math.sin((bx * 0.16 - by * 0.12) + elapsed * 2.8) * 0.12;
-                    const ripple = Math.cos(by * 0.34 - elapsed * 3.6 + bx * 0.05) * 0.05;
-                    arr[i + 2] = riverBasePositions[i + 2] + wave1 + wave2 + ripple;
-                }
-                posAttr.needsUpdate = true;
-                riverMesh.geometry.computeVertexNormals();
-            }
-
-            if (riverBumpTex) {
-                riverBumpTex.offset.y = -(elapsed * 0.06) % 1;
-                riverBumpTex.offset.x = Math.sin(elapsed * 0.25) * 0.04;
+            // 黄浦江水面：把 3 条游船的位置/航向/速度喂给 WaterSystem，
+            // 它在尾迹纹理上画 Kelvin 尾迹，水面 Shader 再采样做顶点、法线、泡沫。
+            if (waterSystem) {
+                const boatData = boats.map(b => ({
+                    position: b.mesh.position,
+                    heading: b.mesh.rotation.y,
+                    speed: Math.abs(b.speed)
+                }));
+                waterSystem.update(dt, boatData);
+                waterSystem.tick(dt);
             }
 
             pearlRings.forEach((ring, i) => {
