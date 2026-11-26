@@ -6,6 +6,7 @@
     <title>漫步陆家嘴 - 东方明珠城市探索</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
         
@@ -40,7 +41,6 @@
             height: 100%;
         }
 
-        /* 玻璃拟态 UI 卡片 */
         .glass-panel {
             background: rgba(15, 23, 42, 0.72);
             backdrop-filter: blur(12px);
@@ -65,7 +65,6 @@
             transform: scale(0.96);
         }
 
-        /* 虚拟摇杆区域 */
         #joystick-zone {
             position: fixed;
             bottom: 24px;
@@ -99,17 +98,6 @@
             pointer-events: none;
         }
 
-        /* 动画 */
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.8; }
-        }
-        .animate-pulse-slow {
-            animation: pulse-ring 3s infinite ease-in-out;
-        }
-
-        /* 拍照闪光灯效果 */
         #flash-overlay {
             position: fixed;
             inset: 0;
@@ -123,10 +111,7 @@
 </head>
 <body>
 
-    <!-- 3D 渲染画布容器 -->
     <div id="canvas-container"></div>
-
-    <!-- 拍照闪光层 -->
     <div id="flash-overlay"></div>
 
     <!-- 开始欢迎界面 -->
@@ -146,7 +131,6 @@
                 自由穿梭于上海金融中心，近距离仰望东方明珠、环球金融中心与上海中心大厦，漫步黄浦江滨江大道并收集城市能量球。
             </p>
 
-            <!-- 操作指南网格 -->
             <div class="grid grid-cols-2 gap-3 text-left bg-slate-900/60 rounded-2xl p-4 mb-6 border border-slate-800 text-xs sm:text-sm">
                 <div class="flex items-center gap-2.5">
                     <span class="px-2 py-1 rounded bg-slate-800 border border-slate-700 font-mono text-cyan-400 font-bold">WASD / 方向键</span>
@@ -174,10 +158,7 @@
 
     <!-- 主游戏 HUD 界面 -->
     <div id="game-hud" class="fixed inset-0 z-20 pointer-events-none hidden">
-        
-        <!-- 顶部栏：状态信息 + 模式控制 -->
         <div class="flex flex-wrap items-start justify-between gap-3 p-3 sm:p-5">
-            <!-- 探索进度、能量球与积分 -->
             <div class="glass-panel rounded-2xl px-4 py-2.5 pointer-events-auto flex items-center gap-4">
                 <div>
                     <div class="text-[11px] text-slate-400 uppercase tracking-wider">探索打卡点</div>
@@ -201,9 +182,7 @@
                 </div>
             </div>
 
-            <!-- 右上角工具栏：时间切换、视角切换、拍照模式 -->
             <div class="flex flex-wrap items-center gap-2 pointer-events-auto">
-                <!-- 昼夜/霓虹切换 -->
                 <div class="glass-panel rounded-2xl p-1 flex items-center gap-1">
                     <button data-time="night" class="time-btn active px-2.5 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white transition cursor-pointer">
                         🌃 璀璨夜景
@@ -216,13 +195,11 @@
                     </button>
                 </div>
 
-                <!-- 视角切换 -->
                 <button id="toggle-camera-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-slate-200 hover:text-white hover:border-cyan-400/50 transition cursor-pointer flex items-center gap-1.5">
                     <span>👁️</span>
                     <span id="camera-mode-text">第三人称</span>
                 </button>
 
-                <!-- 拍照模式 -->
                 <button id="photo-mode-btn" class="glass-panel rounded-2xl px-3.5 py-2 text-xs font-bold text-amber-300 hover:border-amber-400/50 transition cursor-pointer flex items-center gap-1.5">
                     <span>📷</span>
                     <span>拍照打卡</span>
@@ -230,7 +207,6 @@
             </div>
         </div>
 
-        <!-- 右侧小地图雷达 -->
         <div class="fixed top-20 right-3 sm:right-5 pointer-events-auto">
             <div class="glass-panel rounded-2xl p-2 flex flex-col items-center">
                 <canvas id="minimap-canvas" width="136" height="136" class="rounded-xl bg-slate-950/90 border border-slate-800"></canvas>
@@ -242,7 +218,6 @@
             </div>
         </div>
 
-        <!-- 景点解锁弹窗卡片 -->
         <div id="landmark-card" class="fixed bottom-28 sm:bottom-10 left-1/2 -translate-x-1/2 w-[92%] max-w-md glass-panel neon-border-pink rounded-3xl p-5 pointer-events-auto transition-all duration-300 opacity-0 translate-y-6 pointer-events-none">
             <div class="flex items-start justify-between gap-3">
                 <div>
@@ -260,7 +235,6 @@
             </p>
         </div>
 
-        <!-- 底部操作提示与快捷传送 -->
         <div class="fixed bottom-4 right-4 hidden sm:flex items-center gap-2 pointer-events-auto">
             <button id="teleport-pearl-btn" class="glass-panel rounded-xl px-3 py-2 text-xs text-slate-300 hover:text-pink-300 transition cursor-pointer">
                 🗼 回到明珠广场
@@ -276,7 +250,6 @@
             </button>
         </div>
 
-        <!-- 移动端/触屏虚拟摇杆与跳跃按钮 -->
         <div id="joystick-zone" class="sm:hidden">
             <div id="joystick-base">
                 <div id="joystick-stick"></div>
@@ -322,31 +295,25 @@
     </div>
 
     <script>
-        /**
-         * 漫步陆家嘴 - 3D 城市探索游戏核心逻辑
-         */
-
         // ==================== 全局状态与配置 ====================
         const state = {
             started: false,
-            timeMode: 'night', // 'night' | 'sunset' | 'day'
-            cameraMode: 'third', // 'third' | 'first'
+            timeMode: 'night',
+            cameraMode: 'third',
             photoMode: false,
             score: 0,
             unlockedLandmarks: new Set(),
             collectedOrbs: new Set(),
             activeLandmarkId: null,
-            // 玩家物理与位置
             player: {
                 pos: new THREE.Vector3(0, 0, 58),
                 vel: new THREE.Vector3(0, 0, 0),
-                yaw: Math.PI, // 初始朝向东方明珠 (-Z 方向)
+                yaw: Math.PI,
                 onGround: true,
                 walkCycle: 0,
                 isMoving: false,
                 isSprinting: false
             },
-            // 相机控制（开局略偏侧后方且距离适中，方便观察人物与前方城市景观）
             camera: {
                 yaw: 0.42,
                 pitch: 0.24,
@@ -355,7 +322,6 @@
                 lastX: 0,
                 lastY: 0
             },
-            // 输入状态
             keys: {
                 w: false, a: false, s: false, d: false,
                 ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false,
@@ -364,21 +330,16 @@
             joystick: { active: false, dx: 0, dy: 0 }
         };
 
-        // 场景核心变量
         let scene, camera, renderer, clock;
         let ambientLight, dirLight, hemiLight, characterRimLight, characterFillLight;
         let pearlTowerGroup, pearlLights = [], pearlRings = [];
-        let playerGroup, bodyRig, chestGroup, pelvisGroup;
-        let leftShoulderPivot, leftElbowPivot, rightShoulderPivot, rightElbowPivot;
-        let leftHipPivot, leftKneePivot, rightHipPivot, rightKneePivot;
-        let headGroup, backpackGroup;
+        let playerGroup, glbCharacterPivot, characterMixer = null, characterActions = {};
         let riverMesh, riverBasePositions, riverBumpTex, riverMat;
         let boats = [], streetLampBulbs = [], buildingWindowMats = [];
         let cityCars = [], fountainWaterRings = [], energyOrbs = [];
         let colliders = [];
         let checkpointMeshes = [];
 
-        // 打卡地标数据（7 个陆家嘴经典点位）
         const LANDMARKS = [
             {
                 id: 'pearl_plaza',
@@ -438,7 +399,6 @@
             }
         ];
 
-        // 城市能量球点位（12 个）
         const ENERGY_ORB_LOCATIONS = [
             { id: 'orb_1', x: -12, y: 1.5, z: 22, points: 50 },
             { id: 'orb_2', x: 12, y: 1.5, z: 22, points: 50 },
@@ -454,7 +414,6 @@
             { id: 'orb_12', x: -48, y: 1.5, z: -54, points: 50 }
         ];
 
-        // ==================== 初始化入口 ====================
         function init() {
             const container = document.getElementById('canvas-container');
 
@@ -482,13 +441,12 @@
             buildTeslaFleet();
             buildCheckpoints();
             buildEnergyOrbs();
-            buildRealisticCharacter();
+            loadGlbProtagonist('./Meshy_AI_Red_Shirt_Boy_20261126_texture.glb');
 
             applyTimeTheme('night');
             bindEvents();
         }
 
-        // ==================== 光照系统 ====================
         function setupLighting() {
             hemiLight = new THREE.HemisphereLight(0x88aaff, 0x1e293b, 0.75);
             scene.add(hemiLight);
@@ -510,72 +468,13 @@
             dirLight.shadow.camera.bottom = -d;
             scene.add(dirLight);
 
-            // 角色轮廓光：勾勒发丝与肩部轮廓
             characterRimLight = new THREE.PointLight(0x93c5fd, 1.6, 18);
             scene.add(characterRimLight);
 
-            // 角色近景补光：提亮面部、红T恤图案与裤装细节
             characterFillLight = new THREE.PointLight(0xfff7ed, 1.35, 14);
             scene.add(characterFillLight);
         }
 
-        // ==================== 生成红T恤胸前图形贴图 ====================
-        function createTeeGraphicTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#dc2626';
-            ctx.fillRect(0, 0, 256, 256);
-
-            // 暗红色山林与帐篷徽章风格印花
-            ctx.fillStyle = '#7f1d1d';
-            ctx.beginPath();
-            ctx.moveTo(46, 166);
-            ctx.lineTo(106, 88);
-            ctx.lineTo(156, 166);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(118, 166);
-            ctx.lineTo(166, 98);
-            ctx.lineTo(214, 166);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#450a0a';
-            ctx.beginPath();
-            ctx.moveTo(102, 168);
-            ctx.lineTo(128, 126);
-            ctx.lineTo(154, 168);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#fca5a5';
-            ctx.beginPath();
-            ctx.moveTo(128, 142);
-            ctx.lineTo(120, 168);
-            ctx.lineTo(136, 168);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.strokeStyle = '#991b1b';
-            ctx.lineWidth = 4;
-            for (let i = 0; i < 6; i++) {
-                ctx.beginPath();
-                ctx.moveTo(64 + i * 24, 180);
-                ctx.lineTo(82 + i * 24, 198);
-                ctx.stroke();
-            }
-
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.needsUpdate = true;
-            return tex;
-        }
-
-        // ==================== 生成水面波纹纹理 ====================
         function createWaterRippleTexture() {
             const size = 256;
             const canvas = document.createElement('canvas');
@@ -609,7 +508,6 @@
             return tex;
         }
 
-        // ==================== 地面、道路、广场与黄浦江 ====================
         function buildGroundAndRiver() {
             const landGeo = new THREE.BoxGeometry(320, 2, 360);
             const landMat = new THREE.MeshStandardMaterial({
@@ -722,7 +620,6 @@
             createRiverBoats();
         }
 
-        // ==================== 黄浦江游船 ====================
         function createRiverBoats() {
             const accentColors = [0xec4899, 0x06b6d4, 0xf59e0b];
             const hullWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35, metalness: 0.25 });
@@ -844,7 +741,6 @@
             }
         }
 
-        // ==================== 中心绿地喷泉花坛 & 东昌路轮渡码头 ====================
         function buildCentralGreenParkAndPier() {
             const parkGroup = new THREE.Group();
             parkGroup.position.set(16, 0, -42);
@@ -980,7 +876,6 @@
             scene.add(pierGroup);
         }
 
-        // ==================== 东方明珠广播电视塔 ====================
         function buildOrientalPearlTower() {
             pearlTowerGroup = new THREE.Group();
             pearlTowerGroup.position.set(0, 0, 0);
@@ -1112,7 +1007,6 @@
             scene.add(pearlTowerGroup);
         }
 
-        // ==================== 陆家嘴天际线建筑群 ====================
         function buildLujiazuiSkyline() {
             const winTex = createWindowTexture();
             const glassMatCyan = new THREE.MeshStandardMaterial({
@@ -1246,7 +1140,6 @@
             return tex;
         }
 
-        // ==================== 街道景观：路灯、绿化树 ====================
         function buildStreetProps() {
             const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
             const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
@@ -1269,7 +1162,6 @@
             }
         }
 
-        // ==================== 高细节 Tesla 车队 ====================
         function createTeslaCar(paintHex, spec = 'model3') {
             const car = new THREE.Group();
             const isSUV = spec === 'modely';
@@ -1279,17 +1171,9 @@
             const paintMat = new THREE.MeshStandardMaterial({
                 color: paintHex,
                 roughness: 0.18,
-                metalness: 0.78,
-                clearcoat: 0.85,
-                clearcoatRoughness: 0.12
+                metalness: 0.78
             });
-
-            const trimBlackMat = new THREE.MeshStandardMaterial({
-                color: 0x0b0f17,
-                roughness: 0.35,
-                metalness: 0.45
-            });
-
+            const trimBlackMat = new THREE.MeshStandardMaterial({ color: 0x0b0f17, roughness: 0.35, metalness: 0.45 });
             const glassMat = new THREE.MeshStandardMaterial({
                 color: 0x091322,
                 emissive: 0x1e3a5f,
@@ -1297,139 +1181,49 @@
                 roughness: 0.06,
                 metalness: 0.95
             });
-
             const headlightMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
             const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff2442 });
             const chromeAccentMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.15 });
 
-            const lowerBody = new THREE.Mesh(
-                new THREE.BoxGeometry(4.55 * lenScale, 0.62, 1.98),
-                paintMat
-            );
+            const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(4.55 * lenScale, 0.62, 1.98), paintMat);
             lowerBody.position.set(0, 0.66, 0);
             lowerBody.castShadow = true;
-            lowerBody.receiveShadow = true;
             car.add(lowerBody);
 
-            const hood = new THREE.Mesh(
-                new THREE.BoxGeometry(1.38, 0.22, 1.88),
-                paintMat
-            );
+            const hood = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.22, 1.88), paintMat);
             hood.position.set(1.52 * lenScale, 0.96, 0);
             hood.rotation.z = -0.14;
-            hood.castShadow = true;
             car.add(hood);
 
-            const frontBumper = new THREE.Mesh(
-                new THREE.BoxGeometry(0.45, 0.42, 1.96),
-                paintMat
-            );
+            const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.42, 1.96), paintMat);
             frontBumper.position.set(2.26 * lenScale, 0.56, 0);
             frontBumper.rotation.z = -0.22;
-            frontBumper.castShadow = true;
             car.add(frontBumper);
 
-            const lowerLip = new THREE.Mesh(
-                new THREE.BoxGeometry(0.42, 0.12, 1.72),
-                trimBlackMat
-            );
-            lowerLip.position.set(2.28 * lenScale, 0.34, 0);
-            car.add(lowerLip);
-
-            const cabinCore = new THREE.Mesh(
-                new THREE.BoxGeometry(2.15 * lenScale, 0.52 * heightScale, 1.72),
-                glassMat
-            );
+            const cabinCore = new THREE.Mesh(new THREE.BoxGeometry(2.15 * lenScale, 0.52 * heightScale, 1.72), glassMat);
             cabinCore.position.set(-0.18 * lenScale, 1.16 * heightScale, 0);
-            cabinCore.castShadow = true;
             car.add(cabinCore);
 
-            const windshield = new THREE.Mesh(
-                new THREE.BoxGeometry(1.18, 0.08, 1.66),
-                glassMat
-            );
+            const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 1.66), glassMat);
             windshield.position.set(0.68 * lenScale, 1.18 * heightScale, 0);
             windshield.rotation.z = 0.56;
             car.add(windshield);
 
-            const panoRoof = new THREE.Mesh(
-                new THREE.BoxGeometry(1.38 * lenScale, 0.07, 1.62),
-                glassMat
-            );
+            const panoRoof = new THREE.Mesh(new THREE.BoxGeometry(1.38 * lenScale, 0.07, 1.62), glassMat);
             panoRoof.position.set(-0.22 * lenScale, 1.40 * heightScale, 0);
-            panoRoof.castShadow = true;
             car.add(panoRoof);
 
-            const rearGlass = new THREE.Mesh(
-                new THREE.BoxGeometry(1.32, 0.08, 1.64),
-                glassMat
-            );
+            const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.08, 1.64), glassMat);
             rearGlass.position.set(-1.36 * lenScale, 1.16 * heightScale, 0);
             rearGlass.rotation.z = -0.48;
             car.add(rearGlass);
 
-            const spoiler = new THREE.Mesh(
-                new THREE.BoxGeometry(0.22, 0.08, 1.76),
-                trimBlackMat
-            );
-            spoiler.position.set(-2.16 * lenScale, 0.96, 0);
-            spoiler.rotation.z = 0.25;
-            car.add(spoiler);
-
-            const rearBumper = new THREE.Mesh(
-                new THREE.BoxGeometry(0.38, 0.44, 1.96),
-                paintMat
-            );
-            rearBumper.position.set(-2.24 * lenScale, 0.58, 0);
-            rearBumper.rotation.z = 0.16;
-            car.add(rearBumper);
-
-            const diffuser = new THREE.Mesh(
-                new THREE.BoxGeometry(0.32, 0.14, 1.74),
-                trimBlackMat
-            );
-            diffuser.position.set(-2.26 * lenScale, 0.34, 0);
-            car.add(diffuser);
-
             [-1, 1].forEach(side => {
-                const mirrorArm = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.14, 0.08, 0.22),
-                    trimBlackMat
-                );
-                mirrorArm.position.set(0.56 * lenScale, 1.05 * heightScale, side * 0.94);
-                car.add(mirrorArm);
-
-                const mirrorCap = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.28, 0.16, 0.18),
-                    paintMat
-                );
-                mirrorCap.position.set(0.52 * lenScale, 1.07 * heightScale, side * 1.06);
-                mirrorCap.castShadow = true;
-                car.add(mirrorCap);
-
-                [0.12, -0.78].forEach(hx => {
-                    const handle = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.20, 0.04, 0.05),
-                        chromeAccentMat
-                    );
-                    handle.position.set(hx * lenScale, 0.84, side * 1.0);
-                    car.add(handle);
-                });
-            });
-
-            [-1, 1].forEach(side => {
-                const headLight = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.36, 0.11, 0.24),
-                    headlightMat
-                );
+                const headLight = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.11, 0.24), headlightMat);
                 headLight.position.set(2.12 * lenScale, 0.78, side * 0.74);
-                headLight.rotation.y = side * -0.18;
                 car.add(headLight);
 
-                const tailLight = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.14, 0.12, 0.44),
-                    taillightMat
-                );
+                const tailLight = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.44), taillightMat);
                 tailLight.position.set(-2.36 * lenScale, 0.80, side * 0.68);
                 car.add(tailLight);
             });
@@ -1437,39 +1231,19 @@
             const wheels = [];
             const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.26, 24);
             wheelGeo.rotateX(Math.PI / 2);
-            const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85, metalness: 0.1 });
+            const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.22, metalness: 0.88 });
-            const spokeGeo = new THREE.BoxGeometry(0.58, 0.08, 0.28);
 
-            const wheelCoords = [
+            [
                 [1.42 * lenScale, 0.38, 0.96],
                 [1.42 * lenScale, 0.38, -0.96],
                 [-1.42 * lenScale, 0.38, 0.96],
                 [-1.42 * lenScale, 0.38, -0.96]
-            ];
-
-            wheelCoords.forEach(([wx, wy, wz]) => {
+            ].forEach(([wx, wy, wz]) => {
                 const wheelPivot = new THREE.Group();
                 wheelPivot.position.set(wx, wy, wz);
-
-                const tire = new THREE.Mesh(wheelGeo, tireMat);
-                tire.castShadow = true;
-                wheelPivot.add(tire);
-
-                const rim = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.25, 0.25, 0.275, 18).rotateX(Math.PI / 2),
-                    rimMat
-                );
-                wheelPivot.add(rim);
-
-                const spoke1 = new THREE.Mesh(spokeGeo, trimBlackMat);
-                spoke1.position.z = wz > 0 ? 0.01 : -0.01;
-                wheelPivot.add(spoke1);
-
-                const spoke2 = spoke1.clone();
-                spoke2.rotation.z = Math.PI / 2;
-                wheelPivot.add(spoke2);
-
+                wheelPivot.add(new THREE.Mesh(wheelGeo, tireMat));
+                wheelPivot.add(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.275, 18).rotateX(Math.PI / 2), rimMat));
                 car.add(wheelPivot);
                 wheels.push(wheelPivot);
             });
@@ -1479,43 +1253,21 @@
 
         function buildTeslaFleet() {
             const teslaColors = [0xdc2626, 0xf8fafc, 0x2563eb, 0x475569];
-
             for (let i = 0; i < 2; i++) {
                 const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(
-                    teslaColors[i % teslaColors.length],
-                    i === 0 ? 'model3' : 'modely'
-                );
+                const { car, wheels } = createTeslaCar(teslaColors[i], i === 0 ? 'model3' : 'modely');
                 if (dir < 0) car.rotation.y = Math.PI;
                 car.position.set(55 + i * 48, 0.04, 45 + dir * 2.2);
                 scene.add(car);
-                cityCars.push({
-                    mesh: car,
-                    wheels,
-                    axis: 'x',
-                    speed: 15 * dir,
-                    min: 48,
-                    max: 132
-                });
+                cityCars.push({ mesh: car, wheels, axis: 'x', speed: 15 * dir, min: 48, max: 132 });
             }
-
             for (let i = 0; i < 2; i++) {
                 const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(
-                    teslaColors[(i + 2) % teslaColors.length],
-                    i === 1 ? 'modely' : 'model3'
-                );
+                const { car, wheels } = createTeslaCar(teslaColors[i + 2], i === 1 ? 'modely' : 'model3');
                 car.rotation.y = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
                 car.position.set(-42 + dir * 2.2, 0.04, -75 + i * 70);
                 scene.add(car);
-                cityCars.push({
-                    mesh: car,
-                    wheels,
-                    axis: 'z',
-                    speed: 13.5 * dir,
-                    min: -110,
-                    max: 110
-                });
+                cityCars.push({ mesh: car, wheels, axis: 'z', speed: 13.5 * dir, min: -110, max: 110 });
             }
         }
 
@@ -1530,7 +1282,6 @@
             bulb.position.y = 6.6;
             lamp.add(bulb);
             streetLampBulbs.push(bulb);
-
             scene.add(lamp);
         }
 
@@ -1545,42 +1296,33 @@
             crown1.position.y = 3.4;
             crown1.castShadow = true;
             tree.add(crown1);
-
             scene.add(tree);
         }
 
-        // ==================== 景点打卡光柱标记 ====================
         function buildCheckpoints() {
             LANDMARKS.forEach(lm => {
                 const group = new THREE.Group();
                 group.position.copy(lm.pos);
 
-                const ringGeo = new THREE.RingGeometry(2.6, 3.2, 32);
-                const ringMat = new THREE.MeshBasicMaterial({
-                    color: 0xf59e0b,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    opacity: 0.85
-                });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(2.6, 3.2, 32),
+                    new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+                );
                 ring.rotation.x = -Math.PI / 2;
                 ring.position.y = 0.18;
                 group.add(ring);
 
-                const gemGeo = new THREE.OctahedronGeometry(0.9, 0);
-                const gemMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 });
-                const gem = new THREE.Mesh(gemGeo, gemMat);
+                const gem = new THREE.Mesh(
+                    new THREE.OctahedronGeometry(0.9, 0),
+                    new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
+                );
                 gem.position.y = 2.6;
                 group.add(gem);
 
-                const beamGeo = new THREE.CylinderGeometry(2.5, 2.5, 8, 24, 1, true);
-                const beamMat = new THREE.MeshBasicMaterial({
-                    color: 0xf59e0b,
-                    transparent: true,
-                    opacity: 0.14,
-                    side: THREE.DoubleSide
-                });
-                const beam = new THREE.Mesh(beamGeo, beamMat);
+                const beam = new THREE.Mesh(
+                    new THREE.CylinderGeometry(2.5, 2.5, 8, 24, 1, true),
+                    new THREE.MeshBasicMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.14, side: THREE.DoubleSide })
+                );
                 beam.position.y = 4;
                 group.add(beam);
 
@@ -1589,7 +1331,6 @@
             });
         }
 
-        // ==================== 可收集城市能量球 ====================
         function buildEnergyOrbs() {
             const coreMat = new THREE.MeshStandardMaterial({
                 color: 0x22d3ee,
@@ -1631,493 +1372,78 @@
             });
 
             const counterEl = document.getElementById('orb-counter');
-            if (counterEl) {
-                counterEl.textContent = `0 / ${energyOrbs.length}`;
-            }
+            if (counterEl) counterEl.textContent = `0 / ${energyOrbs.length}`;
         }
 
-        // ==================== 3D 主人公建模（刺猬头棕发男孩 + 红T恤山林印花 + 棕色休闲裤 + 红白鞋） ====================
-        function buildRealisticCharacter() {
+        // ==================== 加载 GLB 3D 主人公模型 ====================
+        function loadGlbProtagonist(modelUrl) {
             playerGroup = new THREE.Group();
             playerGroup.position.copy(state.player.pos);
-
-            bodyRig = new THREE.Group();
-            playerGroup.add(bodyRig);
-
-            const teeGraphicTex = createTeeGraphicTexture();
-
-            const skinMat = new THREE.MeshStandardMaterial({
-                color: 0xf0be96,
-                roughness: 0.52,
-                metalness: 0.02
-            });
-            const lipMat = new THREE.MeshStandardMaterial({
-                color: 0xc97b6e,
-                roughness: 0.55,
-                metalness: 0.02
-            });
-            const hairMainMat = new THREE.MeshStandardMaterial({
-                color: 0x3b2314,
-                roughness: 0.62,
-                metalness: 0.14
-            });
-            const hairHighlightMat = new THREE.MeshStandardMaterial({
-                color: 0x5c3a24,
-                roughness: 0.52,
-                metalness: 0.18
-            });
-            const teeRedMat = new THREE.MeshStandardMaterial({
-                color: 0xdc2626,
-                roughness: 0.62,
-                metalness: 0.04
-            });
-            const teePrintMat = new THREE.MeshStandardMaterial({
-                map: teeGraphicTex,
-                roughness: 0.64,
-                metalness: 0.04
-            });
-            const collarMat = new THREE.MeshStandardMaterial({
-                color: 0xb91c1c,
-                roughness: 0.68,
-                metalness: 0.04
-            });
-            const pantsBrownMat = new THREE.MeshStandardMaterial({
-                color: 0x7c6348,
-                roughness: 0.76,
-                metalness: 0.04
-            });
-            const shoeRedMat = new THREE.MeshStandardMaterial({
-                color: 0xdc2626,
-                roughness: 0.55,
-                metalness: 0.08
-            });
-            const shoeWhiteMat = new THREE.MeshStandardMaterial({
-                color: 0xf8fafc,
-                roughness: 0.42,
-                metalness: 0.08
-            });
-            const shoeSoleMat = new THREE.MeshStandardMaterial({
-                color: 0x1e293b,
-                roughness: 0.85,
-                metalness: 0.12
-            });
-            const watchMetalMat = new THREE.MeshStandardMaterial({
-                color: 0x334155,
-                roughness: 0.35,
-                metalness: 0.75
-            });
-
-            pelvisGroup = new THREE.Group();
-            pelvisGroup.position.set(0, 1.0, 0);
-            bodyRig.add(pelvisGroup);
-
-            const pelvisMesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.22, 0.20, 0.21, 20),
-                pantsBrownMat
-            );
-            pelvisMesh.scale.set(1.12, 1, 0.8);
-            pelvisMesh.castShadow = true;
-            pelvisGroup.add(pelvisMesh);
-
-            const beltMesh = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.226, 0.226, 0.045, 20),
-                shoeSoleMat
-            );
-            beltMesh.scale.set(1.13, 1, 0.81);
-            beltMesh.position.y = 0.088;
-            pelvisGroup.add(beltMesh);
-
-            chestGroup = new THREE.Group();
-            chestGroup.position.set(0, 0.105, 0);
-            pelvisGroup.add(chestGroup);
-
-            const waist = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.21, 0.198, 0.22, 20),
-                teeRedMat
-            );
-            waist.scale.set(1.1, 1, 0.76);
-            waist.position.y = 0.11;
-            waist.castShadow = true;
-            chestGroup.add(waist);
-
-            const chest = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.255, 0.21, 0.5, 22),
-                teeRedMat
-            );
-            chest.scale.set(1.15, 1, 0.75);
-            chest.position.y = 0.44;
-            chest.castShadow = true;
-            chestGroup.add(chest);
-
-            // 胸前山林徽章印花面板
-            const chestGraphicPlate = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.165, 0.155, 0.24, 18, 1, true, -0.58, 1.16),
-                teePrintMat
-            );
-            chestGraphicPlate.scale.set(1.16, 1, 0.76);
-            chestGraphicPlate.position.set(0, 0.46, 0.015);
-            chestGroup.add(chestGraphicPlate);
-
-            const collarRing = new THREE.Mesh(
-                new THREE.TorusGeometry(0.095, 0.018, 10, 20),
-                collarMat
-            );
-            collarRing.rotation.x = Math.PI / 2 - 0.15;
-            collarRing.position.set(0, 0.69, 0.04);
-            chestGroup.add(collarRing);
-
-            backpackGroup = new THREE.Group();
-            backpackGroup.position.set(0, 0.44, -0.19);
-            const packBody = new THREE.Mesh(
-                new THREE.BoxGeometry(0.32, 0.4, 0.12),
-                new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.65, metalness: 0.2 })
-            );
-            packBody.castShadow = true;
-            backpackGroup.add(packBody);
-
-            [-0.12, 0.12].forEach(sx => {
-                const strap = new THREE.Mesh(
-                    new THREE.TorusGeometry(0.155, 0.02, 8, 16, Math.PI),
-                    shoeSoleMat
-                );
-                strap.position.set(sx, 0.12, 0.07);
-                strap.rotation.y = Math.PI / 2;
-                backpackGroup.add(strap);
-            });
-            chestGroup.add(backpackGroup);
-
-            const neck = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.066, 0.08, 0.13, 16),
-                skinMat
-            );
-            neck.position.set(0, 0.74, 0.01);
-            neck.castShadow = true;
-            chestGroup.add(neck);
-
-            headGroup = new THREE.Group();
-            headGroup.position.set(0, 0.81, 0.02);
-            chestGroup.add(headGroup);
-
-            const cranium = new THREE.Mesh(
-                new THREE.SphereGeometry(0.185, 24, 22),
-                skinMat
-            );
-            cranium.scale.set(0.92, 1.08, 0.98);
-            cranium.position.y = 0.185;
-            cranium.castShadow = true;
-            headGroup.add(cranium);
-
-            const jaw = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.145, 0.095, 0.125, 18),
-                skinMat
-            );
-            jaw.scale.set(0.95, 1.0, 0.94);
-            jaw.position.set(0, 0.085, 0.024);
-            headGroup.add(jaw);
-
-            const noseBridge = new THREE.Mesh(
-                new THREE.BoxGeometry(0.032, 0.055, 0.044),
-                skinMat
-            );
-            noseBridge.position.set(0, 0.168, 0.176);
-            noseBridge.rotation.x = -0.22;
-            headGroup.add(noseBridge);
-
-            const noseTip = new THREE.Mesh(
-                new THREE.SphereGeometry(0.024, 12, 12),
-                skinMat
-            );
-            noseTip.position.set(0, 0.146, 0.194);
-            headGroup.add(noseTip);
-
-            const browMat = new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.7 });
-            const scleraMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-            const irisMat = new THREE.MeshBasicMaterial({ color: 0x29180d });
-            const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-
-            [-1, 1].forEach(side => {
-                const brow = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.056, 0.015, 0.022),
-                    browMat
-                );
-                brow.position.set(side * 0.06, 0.218, 0.168);
-                brow.rotation.z = side * -0.06;
-                brow.rotation.x = -0.14;
-                headGroup.add(brow);
-
-                const eyeWhite = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.026, 14, 14),
-                    scleraMat
-                );
-                eyeWhite.scale.set(1.15, 1.05, 0.65);
-                eyeWhite.position.set(side * 0.058, 0.186, 0.166);
-                headGroup.add(eyeWhite);
-
-                const pupil = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.015, 12, 12),
-                    irisMat
-                );
-                pupil.position.set(side * 0.058, 0.186, 0.178);
-                headGroup.add(pupil);
-
-                const glint = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.0055, 8, 8),
-                    glintMat
-                );
-                glint.position.set(side * 0.064, 0.192, 0.186);
-                headGroup.add(glint);
-
-                const ear = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.044, 12, 12),
-                    skinMat
-                );
-                ear.scale.set(0.5, 1.15, 0.85);
-                ear.position.set(side * 0.168, 0.175, 0.005);
-                headGroup.add(ear);
-            });
-
-            const mouth = new THREE.Mesh(
-                new THREE.BoxGeometry(0.052, 0.014, 0.02),
-                lipMat
-            );
-            mouth.position.set(0, 0.105, 0.172);
-            headGroup.add(mouth);
-
-            // 刺猬头短发发冠与向上翘起的发簇
-            const hairCrown = new THREE.Mesh(
-                new THREE.SphereGeometry(0.194, 24, 20, 0, Math.PI * 2, 0, Math.PI * 0.58),
-                hairMainMat
-            );
-            hairCrown.scale.set(0.95, 1.02, 1.02);
-            hairCrown.position.set(0, 0.21, -0.006);
-            hairCrown.rotation.x = -0.1;
-            hairCrown.castShadow = true;
-            headGroup.add(hairCrown);
-
-            const spikeConfigs = [
-                { x: -0.10, y: 0.36, z: 0.06, rz: 0.28, rx: 0.25, s: 1.05 },
-                { x: -0.05, y: 0.39, z: 0.08, rz: 0.12, rx: 0.28, s: 1.15 },
-                { x: 0.00, y: 0.41, z: 0.07, rz: 0.0,  rx: 0.22, s: 1.22 },
-                { x: 0.05, y: 0.39, z: 0.08, rz: -0.14, rx: 0.28, s: 1.15 },
-                { x: 0.10, y: 0.36, z: 0.06, rz: -0.28, rx: 0.25, s: 1.05 },
-                { x: -0.13, y: 0.31, z: 0.01, rz: 0.55, rx: 0.1,  s: 0.95 },
-                { x: 0.13, y: 0.31, z: 0.01, rz: -0.55, rx: 0.1,  s: 0.95 },
-                { x: -0.07, y: 0.35, z: -0.06, rz: 0.25, rx: -0.25, s: 1.0 },
-                { x: 0.00, y: 0.37, z: -0.07, rz: 0.0,  rx: -0.28, s: 1.08 },
-                { x: 0.07, y: 0.35, z: -0.06, rz: -0.25, rx: -0.25, s: 1.0 }
-            ];
-
-            spikeConfigs.forEach((sp, idx) => {
-                const spike = new THREE.Mesh(
-                    new THREE.ConeGeometry(0.042 * sp.s, 0.145 * sp.s, 7),
-                    idx % 2 === 0 ? hairMainMat : hairHighlightMat
-                );
-                spike.position.set(sp.x, sp.y, sp.z);
-                spike.rotation.z = sp.rz;
-                spike.rotation.x = sp.rx;
-                spike.castShadow = true;
-                headGroup.add(spike);
-            });
-
-            function buildArm(side) {
-                const shoulderPivot = new THREE.Group();
-                shoulderPivot.position.set(side * 0.30, 0.63, 0.01);
-
-                const deltoid = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.074, 14, 14),
-                    teeRedMat
-                );
-                deltoid.castShadow = true;
-                shoulderPivot.add(deltoid);
-
-                const sleeve = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.066, 0.06, 0.15, 14),
-                    teeRedMat
-                );
-                sleeve.position.y = -0.075;
-                sleeve.castShadow = true;
-                shoulderPivot.add(sleeve);
-
-                const sleeveHem = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.061, 0.061, 0.02, 14),
-                    collarMat
-                );
-                sleeveHem.position.y = -0.148;
-                shoulderPivot.add(sleeveHem);
-
-                const upperSkin = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.055, 0.049, 0.14, 14),
-                    skinMat
-                );
-                upperSkin.position.y = -0.215;
-                upperSkin.castShadow = true;
-                shoulderPivot.add(upperSkin);
-
-                const elbowPivot = new THREE.Group();
-                elbowPivot.position.set(0, -0.29, 0);
-                shoulderPivot.add(elbowPivot);
-
-                const elbowJoint = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.05, 12, 12),
-                    skinMat
-                );
-                elbowPivot.add(elbowJoint);
-
-                const forearm = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.05, 0.041, 0.255, 14),
-                    skinMat
-                );
-                forearm.position.y = -0.13;
-                forearm.castShadow = true;
-                elbowPivot.add(forearm);
-
-                if (side < 0) {
-                    const watchBand = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.044, 0.044, 0.03, 14),
-                        shoeSoleMat
-                    );
-                    watchBand.position.y = -0.225;
-                    elbowPivot.add(watchBand);
-
-                    const watchCase = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.02, 0.036, 0.032),
-                        watchMetalMat
-                    );
-                    watchCase.position.set(-0.043, -0.225, 0);
-                    elbowPivot.add(watchCase);
-                }
-
-                const palm = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.066, 0.085, 0.036),
-                    skinMat
-                );
-                palm.position.set(0, -0.30, 0.01);
-                palm.castShadow = true;
-                elbowPivot.add(palm);
-
-                const fingers = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.06, 0.062, 0.03),
-                    skinMat
-                );
-                fingers.position.set(0, -0.368, 0.012);
-                fingers.rotation.x = 0.18;
-                elbowPivot.add(fingers);
-
-                const thumb = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.022, 0.048, 0.024),
-                    skinMat
-                );
-                thumb.position.set(-side * 0.036, -0.325, 0.022);
-                thumb.rotation.z = side * -0.35;
-                elbowPivot.add(thumb);
-
-                return { shoulderPivot, elbowPivot };
-            }
-
-            const leftArm = buildArm(-1);
-            const rightArm = buildArm(1);
-            leftShoulderPivot = leftArm.shoulderPivot;
-            leftElbowPivot = leftArm.elbowPivot;
-            rightShoulderPivot = rightArm.shoulderPivot;
-            rightElbowPivot = rightArm.elbowPivot;
-            chestGroup.add(leftShoulderPivot);
-            chestGroup.add(rightShoulderPivot);
-
-            function buildLeg(side) {
-                const hipPivot = new THREE.Group();
-                hipPivot.position.set(side * 0.115, -0.055, 0);
-
-                const hipJoint = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.088, 14, 14),
-                    pantsBrownMat
-                );
-                hipPivot.add(hipJoint);
-
-                const thigh = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.095, 0.076, 0.42, 16),
-                    pantsBrownMat
-                );
-                thigh.position.y = -0.21;
-                thigh.castShadow = true;
-                hipPivot.add(thigh);
-
-                const kneePivot = new THREE.Group();
-                kneePivot.position.set(0, -0.43, 0);
-                hipPivot.add(kneePivot);
-
-                const kneeCap = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.072, 14, 14),
-                    pantsBrownMat
-                );
-                kneeCap.scale.set(0.95, 1.0, 1.06);
-                kneeCap.position.z = 0.012;
-                kneePivot.add(kneeCap);
-
-                const calf = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.07, 0.054, 0.405, 16),
-                    pantsBrownMat
-                );
-                calf.position.y = -0.202;
-                calf.castShadow = true;
-                kneePivot.add(calf);
-
-                // 白色鞋底包边与红鞋身 + 白鞋头 + 白鞋带
-                const shoeSole = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.132, 0.042, 0.285),
-                    shoeWhiteMat
-                );
-                shoeSole.position.set(0, -0.438, 0.042);
-                shoeSole.castShadow = true;
-                kneePivot.add(shoeSole);
-
-                const shoeTrim = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.135, 0.016, 0.288),
-                    shoeSoleMat
-                );
-                shoeTrim.position.set(0, -0.456, 0.042);
-                kneePivot.add(shoeTrim);
-
-                const shoeUpper = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.124, 0.068, 0.19),
-                    shoeRedMat
-                );
-                shoeUpper.position.set(0, -0.398, 0.01);
-                shoeUpper.castShadow = true;
-                kneePivot.add(shoeUpper);
-
-                const shoeToeCap = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.124, 0.052, 0.092),
-                    shoeWhiteMat
-                );
-                shoeToeCap.position.set(0, -0.406, 0.134);
-                shoeToeCap.castShadow = true;
-                kneePivot.add(shoeToeCap);
-
-                for (let l = 0; l < 3; l++) {
-                    const lace = new THREE.Mesh(
-                        new THREE.BoxGeometry(0.075, 0.012, 0.018),
-                        shoeWhiteMat
-                    );
-                    lace.position.set(0, -0.362, 0.045 + l * 0.032);
-                    kneePivot.add(lace);
-                }
-
-                return { hipPivot, kneePivot };
-            }
-
-            const leftLeg = buildLeg(-1);
-            const rightLeg = buildLeg(1);
-            leftHipPivot = leftLeg.hipPivot;
-            leftKneePivot = leftLeg.kneePivot;
-            rightHipPivot = rightLeg.hipPivot;
-            rightKneePivot = rightLeg.kneePivot;
-            pelvisGroup.add(leftHipPivot);
-            pelvisGroup.add(rightHipPivot);
-
             scene.add(playerGroup);
+
+            glbCharacterPivot = new THREE.Group();
+            playerGroup.add(glbCharacterPivot);
+
+            const loader = new THREE.GLTFLoader();
+            loader.load(
+                modelUrl,
+                (gltf) => {
+                    const model = gltf.scene;
+
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            if (child.material) {
+                                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                                mats.forEach(mat => {
+                                    if (mat.map) mat.map.encoding = THREE.sRGBEncoding;
+                                    if (mat.emissiveMap) mat.emissiveMap.encoding = THREE.sRGBEncoding;
+                                    mat.needsUpdate = true;
+                                });
+                            }
+                        }
+                    });
+
+                    // 自动归一化身高为 1.85m 并让脚底贴齐地面 y = 0
+                    const rawBox = new THREE.Box3().setFromObject(model);
+                    const rawSize = new THREE.Vector3();
+                    rawBox.getSize(rawSize);
+                    if (rawSize.y > 0) {
+                        const scale = 1.85 / rawSize.y;
+                        model.scale.setScalar(scale);
+                    }
+
+                    model.updateMatrixWorld(true);
+                    const scaledBox = new THREE.Box3().setFromObject(model);
+                    const center = new THREE.Vector3();
+                    scaledBox.getCenter(center);
+                    model.position.x -= center.x;
+                    model.position.z -= center.z;
+                    model.position.y -= scaledBox.min.y;
+
+                    glbCharacterPivot.add(model);
+
+                    // 若 GLB 模型内置骨骼动画，自动接入 AnimationMixer
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        characterMixer = new THREE.AnimationMixer(model);
+                        gltf.animations.forEach((clip, idx) => {
+                            const key = (clip.name || `anim_${idx}`).toLowerCase();
+                            characterActions[key] = characterMixer.clipAction(clip);
+                        });
+                        const idleKey = Object.keys(characterActions).find(k => k.includes('idle')) || Object.keys(characterActions)[0];
+                        if (idleKey && characterActions[idleKey]) {
+                            characterActions[idleKey].play();
+                        }
+                    }
+                },
+                undefined,
+                (error) => {
+                    console.error('加载 GLB 模型失败：', error);
+                }
+            );
         }
 
-        // ==================== 时间/天气主题切换 ====================
         function applyTimeTheme(mode) {
             state.timeMode = mode;
 
@@ -2200,7 +1526,6 @@
             }
         }
 
-        // ==================== 角色移动、多关节动画与碰撞检测 ====================
         function updatePlayer(dt, elapsed = 0) {
             if (!state.started) return;
 
@@ -2242,12 +1567,8 @@
                 const nextX = p.pos.x + moveVec.x * speed * dt;
                 const nextZ = p.pos.z + moveVec.z * speed * dt;
 
-                if (!checkCollision(nextX, p.pos.z)) {
-                    p.pos.x = nextX;
-                }
-                if (!checkCollision(p.pos.x, nextZ)) {
-                    p.pos.z = nextZ;
-                }
+                if (!checkCollision(nextX, p.pos.z)) p.pos.x = nextX;
+                if (!checkCollision(p.pos.x, nextZ)) p.pos.z = nextZ;
 
                 const targetYaw = Math.atan2(moveVec.x, moveVec.z);
                 let diff = targetYaw - p.yaw;
@@ -2287,78 +1608,26 @@
                 );
             }
 
-            if (!p.onGround) {
-                const jumpFactor = Math.max(-1, Math.min(1, p.vel.y / 11.5));
-                pelvisGroup.position.y = 1.0 + Math.sin(elapsed * 8) * 0.02;
-                chestGroup.rotation.x = -jumpFactor * 0.14;
-                leftHipPivot.rotation.x = -0.52;
-                leftKneePivot.rotation.x = 0.68;
-                rightHipPivot.rotation.x = 0.28;
-                rightKneePivot.rotation.x = 0.35;
-
-                leftShoulderPivot.rotation.x = -0.45;
-                leftShoulderPivot.rotation.z = 0.28;
-                leftElbowPivot.rotation.x = -0.45;
-
-                rightShoulderPivot.rotation.x = -0.45;
-                rightShoulderPivot.rotation.z = -0.28;
-                rightElbowPivot.rotation.x = -0.45;
-            } else if (p.isMoving) {
-                const freq = p.isSprinting ? 14.5 : 9.2;
-                const hipAmp = p.isSprinting ? 0.95 : 0.62;
-                const armAmp = p.isSprinting ? 0.85 : 0.56;
-                p.walkCycle += dt * freq;
-
-                const s = Math.sin(p.walkCycle);
-                const c = Math.cos(p.walkCycle);
-
-                pelvisGroup.position.y = 1.0 + Math.abs(c) * (p.isSprinting ? 0.13 : 0.065);
-                pelvisGroup.rotation.y = s * 0.08;
-                chestGroup.rotation.y = -s * 0.14;
-                chestGroup.rotation.x = p.isSprinting ? 0.20 : 0.05;
-
-                const lHip = s * hipAmp;
-                const rHip = -s * hipAmp;
-                leftHipPivot.rotation.x = lHip;
-                rightHipPivot.rotation.x = rHip;
-
-                const lKneeFold = Math.max(0, -c) * (p.isSprinting ? 0.92 : 0.55) + Math.max(0, -lHip) * 0.45;
-                const rKneeFold = Math.max(0, c) * (p.isSprinting ? 0.92 : 0.55) + Math.max(0, -rHip) * 0.45;
-                leftKneePivot.rotation.x = lKneeFold;
-                rightKneePivot.rotation.x = rKneeFold;
-
-                leftShoulderPivot.rotation.x = -s * armAmp;
-                rightShoulderPivot.rotation.x = s * armAmp;
-                leftShoulderPivot.rotation.z = 0.12 + Math.max(0, -s) * 0.06;
-                rightShoulderPivot.rotation.z = -0.12 - Math.max(0, s) * 0.06;
-
-                leftElbowPivot.rotation.x = -(p.isSprinting ? 0.78 : 0.36) - Math.max(0, s) * 0.28;
-                rightElbowPivot.rotation.x = -(p.isSprinting ? 0.78 : 0.36) - Math.max(0, -s) * 0.28;
-
-                headGroup.rotation.y = s * 0.05;
-                headGroup.rotation.x = -chestGroup.rotation.x * 0.5 + Math.abs(s) * 0.03;
-            } else {
-                const breath = Math.sin(elapsed * 2.2);
-                pelvisGroup.position.y += (1.0 - pelvisGroup.position.y) * 0.15;
-                pelvisGroup.rotation.y *= 0.85;
-                chestGroup.rotation.y *= 0.85;
-                chestGroup.rotation.x += (breath * 0.025 - chestGroup.rotation.x) * 0.15;
-
-                leftHipPivot.rotation.x *= 0.84;
-                rightHipPivot.rotation.x *= 0.84;
-                leftKneePivot.rotation.x += (0.04 - leftKneePivot.rotation.x) * 0.15;
-                rightKneePivot.rotation.x += (0.04 - rightKneePivot.rotation.x) * 0.15;
-
-                leftShoulderPivot.rotation.x += (breath * 0.04 - leftShoulderPivot.rotation.x) * 0.15;
-                rightShoulderPivot.rotation.x += (-breath * 0.04 - rightShoulderPivot.rotation.x) * 0.15;
-                leftShoulderPivot.rotation.z += (0.14 - leftShoulderPivot.rotation.z) * 0.15;
-                rightShoulderPivot.rotation.z += (-0.14 - rightShoulderPivot.rotation.z) * 0.15;
-
-                leftElbowPivot.rotation.x += (-0.22 - leftElbowPivot.rotation.x) * 0.15;
-                rightElbowPivot.rotation.x += (-0.22 - rightElbowPivot.rotation.x) * 0.15;
-
-                headGroup.rotation.x += (0 - headGroup.rotation.x) * 0.15;
-                headGroup.rotation.y = Math.sin(elapsed * 0.9) * 0.12;
+            // 若静态 GLB 无自带骨骼动画，则提供自然的律动起伏与前倾反馈
+            if (glbCharacterPivot) {
+                if (characterMixer) {
+                    characterMixer.timeScale = p.isMoving ? (p.isSprinting ? 1.5 : 1.0) : 0.8;
+                    characterMixer.update(dt);
+                } else if (!p.onGround) {
+                    glbCharacterPivot.position.y = 0;
+                    glbCharacterPivot.rotation.x = -0.08;
+                    glbCharacterPivot.rotation.z = 0;
+                } else if (p.isMoving) {
+                    const freq = p.isSprinting ? 14.5 : 9.2;
+                    p.walkCycle += dt * freq;
+                    glbCharacterPivot.position.y = Math.abs(Math.cos(p.walkCycle)) * (p.isSprinting ? 0.12 : 0.06);
+                    glbCharacterPivot.rotation.z = Math.sin(p.walkCycle) * 0.04;
+                    glbCharacterPivot.rotation.x = p.isSprinting ? 0.12 : 0.04;
+                } else {
+                    glbCharacterPivot.position.y += (Math.sin(elapsed * 2.2) * 0.015 - glbCharacterPivot.position.y) * 0.15;
+                    glbCharacterPivot.rotation.z *= 0.85;
+                    glbCharacterPivot.rotation.x *= 0.85;
+                }
             }
 
             playerGroup.visible = state.cameraMode === 'third';
@@ -2366,25 +1635,19 @@
 
         function checkCollision(x, z) {
             if (x < -67.2 || x > 140 || z < -130 || z > 130) return true;
-
             for (let i = 0; i < colliders.length; i++) {
                 const c = colliders[i];
-                if (x > c.minX && x < c.maxX && z > c.minZ && z < c.maxZ) {
-                    return true;
-                }
+                if (x > c.minX && x < c.maxX && z > c.minZ && z < c.maxZ) return true;
             }
             return false;
         }
 
-        // ==================== 相机跟随与视角更新 ====================
-        // 第一人称：pitch > 0 为向上看（抬头），pitch < 0 为向下看（低头）
-        // 第三人称：pitch 增大使相机位置升高（从更高处俯视/看向上方），pitch 减小使相机降低
         function updateCamera() {
             const p = state.player.pos;
             const c = state.camera;
 
             if (state.cameraMode === 'first') {
-                const eyePos = new THREE.Vector3(p.x, p.y + 1.98, p.z);
+                const eyePos = new THREE.Vector3(p.x, p.y + 1.72, p.z);
                 camera.position.copy(eyePos);
 
                 const lookDir = new THREE.Vector3(
@@ -2394,7 +1657,7 @@
                 );
                 camera.lookAt(eyePos.clone().add(lookDir));
             } else {
-                const target = new THREE.Vector3(p.x, p.y + 1.48, p.z);
+                const target = new THREE.Vector3(p.x, p.y + 1.35, p.z);
                 const offsetX = Math.sin(c.yaw) * Math.cos(c.pitch) * c.distance;
                 const offsetY = Math.sin(c.pitch) * c.distance;
                 const offsetZ = Math.cos(c.yaw) * Math.cos(c.pitch) * c.distance;
@@ -2409,7 +1672,6 @@
             }
         }
 
-        // ==================== 世界动画 ====================
         function updateWorldAnimations(elapsed, dt) {
             if (riverMesh && riverBasePositions) {
                 const posAttr = riverMesh.geometry.attributes.position;
@@ -2511,9 +1773,7 @@
                     state.player.pos.z - lmData.pos.z
                 );
 
-                if (dist < lmData.radius) {
-                    nearAnyLandmark = lmData;
-                }
+                if (dist < lmData.radius) nearAnyLandmark = lmData;
             });
 
             if (nearAnyLandmark && state.activeLandmarkId !== nearAnyLandmark.id) {
@@ -2557,7 +1817,6 @@
             card.classList.add('opacity-0', 'translate-y-6', 'pointer-events-none');
         }
 
-        // ==================== 小地图雷达绘制 ====================
         function drawMinimap() {
             const canvas = document.getElementById('minimap-canvas');
             if (!canvas) return;
@@ -2569,7 +1828,6 @@
             const scale = 0.62;
 
             ctx.clearRect(0, 0, w, h);
-
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, w, h);
 
@@ -2626,9 +1884,6 @@
             ctx.restore();
         }
 
-        // ==================== 视角俯仰角更新辅助 ====================
-        // 第一人称：deltaY < 0（向上滑动/拖动）时 pitch 增大（向上看）；deltaY > 0（向下滑动/拖动）时 pitch 减小（向下看）
-        // 第三人称：pitch 增大使相机位置升高（从更高处俯视/看向上方），pitch 减小使相机降低
         function applyPitchDelta(deltaY) {
             const pitchSign = state.cameraMode === 'first' ? -1 : 1;
             state.camera.pitch = Math.max(
@@ -2637,7 +1892,6 @@
             );
         }
 
-        // ==================== 事件监听绑定 ====================
         function bindEvents() {
             document.getElementById('start-btn').addEventListener('click', () => {
                 state.started = true;
@@ -2844,7 +2098,6 @@
             });
         }
 
-        // ==================== 主渲染循环 ====================
         function animate() {
             requestAnimationFrame(animate);
 
