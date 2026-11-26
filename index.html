@@ -295,6 +295,9 @@
     </div>
 
     <script>
+        const TESLA_MODEL_URL = './Meshy_AI_Cyber_Tesla_20261126_texture.glb';
+        const PROTAGONIST_MODEL_URL = './Meshy_AI_Red_Shirt_Boy_20261126_texture.glb';
+
         // ==================== 全局状态与配置 ====================
         const state = {
             started: false,
@@ -441,7 +444,7 @@
             buildTeslaFleet();
             buildCheckpoints();
             buildEnergyOrbs();
-            loadGlbProtagonist('./Meshy_AI_Red_Shirt_Boy_20261126_texture.glb');
+            loadGlbProtagonist(PROTAGONIST_MODEL_URL);
 
             applyTimeTheme('night');
             bindEvents();
@@ -1162,112 +1165,88 @@
             }
         }
 
-        function createTeslaCar(paintHex, spec = 'model3') {
-            const car = new THREE.Group();
-            const isSUV = spec === 'modely';
-            const lenScale = isSUV ? 1.06 : 1.0;
-            const heightScale = isSUV ? 1.14 : 1.0;
+        function normalizeGlbVehicle(rawScene, targetLength = 4.85) {
+            const wrapper = new THREE.Group();
+            const model = rawScene.clone(true);
 
-            const paintMat = new THREE.MeshStandardMaterial({
-                color: paintHex,
-                roughness: 0.18,
-                metalness: 0.78
-            });
-            const trimBlackMat = new THREE.MeshStandardMaterial({ color: 0x0b0f17, roughness: 0.35, metalness: 0.45 });
-            const glassMat = new THREE.MeshStandardMaterial({
-                color: 0x091322,
-                emissive: 0x1e3a5f,
-                emissiveIntensity: 0.22,
-                roughness: 0.06,
-                metalness: 0.95
-            });
-            const headlightMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-            const taillightMat = new THREE.MeshBasicMaterial({ color: 0xff2442 });
-            const chromeAccentMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.9, roughness: 0.15 });
-
-            const lowerBody = new THREE.Mesh(new THREE.BoxGeometry(4.55 * lenScale, 0.62, 1.98), paintMat);
-            lowerBody.position.set(0, 0.66, 0);
-            lowerBody.castShadow = true;
-            car.add(lowerBody);
-
-            const hood = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.22, 1.88), paintMat);
-            hood.position.set(1.52 * lenScale, 0.96, 0);
-            hood.rotation.z = -0.14;
-            car.add(hood);
-
-            const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.42, 1.96), paintMat);
-            frontBumper.position.set(2.26 * lenScale, 0.56, 0);
-            frontBumper.rotation.z = -0.22;
-            car.add(frontBumper);
-
-            const cabinCore = new THREE.Mesh(new THREE.BoxGeometry(2.15 * lenScale, 0.52 * heightScale, 1.72), glassMat);
-            cabinCore.position.set(-0.18 * lenScale, 1.16 * heightScale, 0);
-            car.add(cabinCore);
-
-            const windshield = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.08, 1.66), glassMat);
-            windshield.position.set(0.68 * lenScale, 1.18 * heightScale, 0);
-            windshield.rotation.z = 0.56;
-            car.add(windshield);
-
-            const panoRoof = new THREE.Mesh(new THREE.BoxGeometry(1.38 * lenScale, 0.07, 1.62), glassMat);
-            panoRoof.position.set(-0.22 * lenScale, 1.40 * heightScale, 0);
-            car.add(panoRoof);
-
-            const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.08, 1.64), glassMat);
-            rearGlass.position.set(-1.36 * lenScale, 1.16 * heightScale, 0);
-            rearGlass.rotation.z = -0.48;
-            car.add(rearGlass);
-
-            [-1, 1].forEach(side => {
-                const headLight = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.11, 0.24), headlightMat);
-                headLight.position.set(2.12 * lenScale, 0.78, side * 0.74);
-                car.add(headLight);
-
-                const tailLight = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.44), taillightMat);
-                tailLight.position.set(-2.36 * lenScale, 0.80, side * 0.68);
-                car.add(tailLight);
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    if (child.material) {
+                        const mats = Array.isArray(child.material) ? child.material : [child.material];
+                        mats.forEach(mat => {
+                            if (mat.map) mat.map.encoding = THREE.sRGBEncoding;
+                            if (mat.emissiveMap) mat.emissiveMap.encoding = THREE.sRGBEncoding;
+                            mat.needsUpdate = true;
+                        });
+                    }
+                }
             });
 
-            const wheels = [];
-            const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.26, 24);
-            wheelGeo.rotateX(Math.PI / 2);
-            const tireMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85 });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.22, metalness: 0.88 });
+            const box0 = new THREE.Box3().setFromObject(model);
+            const size0 = new THREE.Vector3();
+            box0.getSize(size0);
 
-            [
-                [1.42 * lenScale, 0.38, 0.96],
-                [1.42 * lenScale, 0.38, -0.96],
-                [-1.42 * lenScale, 0.38, 0.96],
-                [-1.42 * lenScale, 0.38, -0.96]
-            ].forEach(([wx, wy, wz]) => {
-                const wheelPivot = new THREE.Group();
-                wheelPivot.position.set(wx, wy, wz);
-                wheelPivot.add(new THREE.Mesh(wheelGeo, tireMat));
-                wheelPivot.add(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.275, 18).rotateX(Math.PI / 2), rimMat));
-                car.add(wheelPivot);
-                wheels.push(wheelPivot);
-            });
+            // 若模型长轴在 Z 轴而非 X 轴，旋转使其车头朝向 +X 行驶方向
+            if (size0.z > size0.x * 1.15) {
+                model.rotation.y = Math.PI / 2;
+                model.updateMatrixWorld(true);
+            }
 
-            return { car, wheels };
+            const box1 = new THREE.Box3().setFromObject(model);
+            const size1 = new THREE.Vector3();
+            box1.getSize(size1);
+            const maxHoriz = Math.max(size1.x, size1.z, 0.001);
+            const scale = targetLength / maxHoriz;
+            model.scale.setScalar(scale);
+
+            model.updateMatrixWorld(true);
+            const box2 = new THREE.Box3().setFromObject(model);
+            const center2 = new THREE.Vector3();
+            box2.getCenter(center2);
+            model.position.x -= center2.x;
+            model.position.z -= center2.z;
+            model.position.y -= box2.min.y;
+
+            wrapper.add(model);
+            return wrapper;
         }
 
         function buildTeslaFleet() {
-            const teslaColors = [0xdc2626, 0xf8fafc, 0x2563eb, 0x475569];
-            for (let i = 0; i < 2; i++) {
-                const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(teslaColors[i], i === 0 ? 'model3' : 'modely');
-                if (dir < 0) car.rotation.y = Math.PI;
-                car.position.set(55 + i * 48, 0.04, 45 + dir * 2.2);
-                scene.add(car);
-                cityCars.push({ mesh: car, wheels, axis: 'x', speed: 15 * dir, min: 48, max: 132 });
-            }
-            for (let i = 0; i < 2; i++) {
-                const dir = i === 0 ? 1 : -1;
-                const { car, wheels } = createTeslaCar(teslaColors[i + 2], i === 1 ? 'modely' : 'model3');
-                car.rotation.y = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
-                car.position.set(-42 + dir * 2.2, 0.04, -75 + i * 70);
-                scene.add(car);
-                cityCars.push({ mesh: car, wheels, axis: 'z', speed: 13.5 * dir, min: -110, max: 110 });
+            const routes = [
+                { axis: 'x', dir: 1, x: 55, z: 47.2, speed: 15, min: 48, max: 132, rotY: 0 },
+                { axis: 'x', dir: -1, x: 103, z: 42.8, speed: -15, min: 48, max: 132, rotY: Math.PI },
+                { axis: 'z', dir: 1, x: -39.8, z: -75, speed: 13.5, min: -110, max: 110, rotY: -Math.PI / 2 },
+                { axis: 'z', dir: -1, x: -44.2, z: -5, speed: -13.5, min: -110, max: 110, rotY: Math.PI / 2 }
+            ];
+
+            const carContainers = routes.map(r => {
+                const container = new THREE.Group();
+                container.rotation.y = r.rotY;
+                container.position.set(r.x, 0.04, r.z);
+                scene.add(container);
+
+                const entry = { mesh: container, axis: r.axis, speed: r.speed, min: r.min, max: r.max };
+                cityCars.push(entry);
+                return container;
+            });
+
+            if (typeof THREE.GLTFLoader === 'function') {
+                const loader = new THREE.GLTFLoader();
+                loader.load(
+                    TESLA_MODEL_URL,
+                    (gltf) => {
+                        carContainers.forEach((container) => {
+                            const teslaMesh = normalizeGlbVehicle(gltf.scene, 4.9);
+                            container.add(teslaMesh);
+                        });
+                    },
+                    undefined,
+                    (err) => {
+                        console.error('加载特斯拉 GLB 模型失败：', err);
+                    }
+                );
             }
         }
 
@@ -1405,7 +1384,6 @@
                         }
                     });
 
-                    // 自动归一化身高为 1.85m 并让脚底贴齐地面 y = 0
                     const rawBox = new THREE.Box3().setFromObject(model);
                     const rawSize = new THREE.Vector3();
                     rawBox.getSize(rawSize);
@@ -1424,7 +1402,6 @@
 
                     glbCharacterPivot.add(model);
 
-                    // 若 GLB 模型内置骨骼动画，自动接入 AnimationMixer
                     if (gltf.animations && gltf.animations.length > 0) {
                         characterMixer = new THREE.AnimationMixer(model);
                         gltf.animations.forEach((clip, idx) => {
@@ -1608,7 +1585,6 @@
                 );
             }
 
-            // 若静态 GLB 无自带骨骼动画，则提供自然的律动起伏与前倾反馈
             if (glbCharacterPivot) {
                 if (characterMixer) {
                     characterMixer.timeScale = p.isMoving ? (p.isSprinting ? 1.5 : 1.0) : 0.8;
@@ -1713,13 +1689,6 @@
             });
 
             cityCars.forEach(car => {
-                const absSpeed = Math.abs(car.speed);
-                if (car.wheels) {
-                    car.wheels.forEach(w => {
-                        w.rotation.z -= (absSpeed / 0.38) * dt;
-                    });
-                }
-
                 if (car.axis === 'x') {
                     car.mesh.position.x += car.speed * dt;
                     if (car.mesh.position.x > car.max) car.mesh.position.x = car.min;
